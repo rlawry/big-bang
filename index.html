@@ -1,0 +1,3620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Bang Quest - Retro Science Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #008080;
+            font-family: 'MS Sans Serif', Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .window {
+            background: linear-gradient(to right, #000080, #1084d7);
+            border: 2px solid;
+            border-color: #dfdfdf #808080 #808080 #dfdfdf;
+            box-shadow: 1px 1px 0 0 #ffffff inset, 2px 2px 0 0 #dfdfdf inset, 1px 1px 0 0 #808080, 2px 2px 0 0 #000000;
+            width: 100%;
+            max-width: 1000px;
+            max-height: 900px;
+            min-height: 550px;
+            display: flex;
+            flex-direction: column;
+            transition: max-width 0.1s, max-height 0.1s;
+        }
+
+        .window.maximized {
+            max-width: 100vw;
+            max-height: 100vh;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        body.maximized {
+            padding: 0;
+            align-items: stretch;
+        }
+
+        .title-bar {
+            background: linear-gradient(to right, #000080, #1084d7);
+            color: white;
+            padding: 2px 2px 2px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .title-bar-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        .btn-min, .btn-max, .btn-close {
+            width: 16px;
+            height: 14px;
+            background: #c0c0c0;
+            border: 1px solid;
+            border-color: #dfdfdf #808080 #808080 #dfdfdf;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 10px;
+            color: black;
+        }
+
+        .btn-min:active, .btn-max:active, .btn-close:active {
+            border-color: #808080 #dfdfdf #dfdfdf #808080;
+        }
+
+        .menu-bar {
+            background-color: #c0c0c0;
+            border-bottom: 2px solid;
+            border-color: #dfdfdf #808080 #808080 #dfdfdf;
+            padding: 2px 2px;
+            display: flex;
+            gap: 4px;
+            height: 22px;
+            align-items: center;
+            font-size: 11px;
+        }
+
+        .menu-item {
+            padding: 2px 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .menu-item:hover {
+            background: #000080;
+            color: white;
+        }
+
+        .main-content {
+            background-color: #c0c0c0;
+            flex: 1;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .game-container {
+            flex: 1;
+            display: flex;
+            gap: 4px;
+            overflow: hidden;
+        }
+
+        .game-area {
+            flex: 1;
+            background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 60%, #90ee90 60%, #90ee90 100%);
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 6px;
+            overflow-y: auto;
+            font-size: 11px;
+        }
+
+        .level-list {
+            list-style: none;
+        }
+
+        .level-item {
+            padding: 22px 6px;
+            margin-bottom: 2px;
+            background-color: #c0c0c0;
+            border: 1px solid;
+            border-color: #dfdfdf #808080 #808080 #dfdfdf;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .level-item:hover {
+            background: linear-gradient(to bottom, #000080, #1084d7);
+            color: white;
+        }
+
+        .level-item.active {
+            background: linear-gradient(to bottom, #000080, #1084d7);
+            color: white;
+            border-color: #808080 #dfdfdf #dfdfdf #808080;
+        }
+
+        .level-item.completed {
+            font-weight: bold;
+        }
+
+        .level-item.completed::before {
+            content: "✓ ";
+            color: green;
+        }
+
+        .level-item.locked {
+            background-color: #a0a0a0;
+            color: #606060;
+            cursor: not-allowed;
+        }
+
+        .level-item.locked:hover {
+            background: #a0a0a0;
+            color: #606060;
+        }
+
+        .status-bar {
+            background-color: #c0c0c0;
+            border-top: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 2px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 22px;
+            font-size: 11px;
+        }
+
+        .status-field {
+            flex: 1;
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #808080 #dfdfdf #dfdfdf #808080;
+            padding: 2px 4px;
+            margin-right: 2px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(to right, #000080, #1084d7);
+            border: 2px solid;
+            border-color: #dfdfdf #808080 #808080 #dfdfdf;
+            box-shadow: 1px 1px 0 0 #ffffff inset, 2px 2px 0 0 #dfdfdf inset, 1px 1px 0 0 #808080, 2px 2px 0 0 #000000;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-title-bar {
+            background: linear-gradient(to right, #000080, #1084d7);
+            color: white;
+            padding: 2px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .modal-body {
+            background-color: #c0c0c0;
+            padding: 12px;
+            font-size: 11px;
+            color: black;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .modal-buttons {
+            background-color: #c0c0c0;
+            padding: 6px;
+            display: flex;
+            gap: 4px;
+            justify-content: flex-end;
+            border-top: 1px solid #dfdfdf;
+        }
+
+        .btn {
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #dfdfdf #808080 #808080 #dfdfdf;
+            padding: 4px 12px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: 'MS Sans Serif', Arial, sans-serif;
+            user-select: none;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .btn:active {
+            border-color: #808080 #dfdfdf #dfdfdf #808080;
+        }
+
+        .btn:hover {
+            background: linear-gradient(to bottom, #dfdfdf, #c0c0c0);
+        }
+
+        .question-box {
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #000080;
+        }
+
+        .answer-option {
+            padding: 4px 4px;
+            margin: 4px 0;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .answer-option:hover {
+            background: linear-gradient(to right, #000080, #1084d7);
+            color: white;
+        }
+
+        .answer-option input {
+            cursor: pointer;
+            margin-right: 6px;
+            flex-shrink: 0;
+        }
+
+        .answer-option label {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .hud {
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 6px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hud-item {
+            display: flex;
+            gap: 8px;
+        }
+
+        .hud-label {
+            font-weight: bold;
+            color: #000080;
+        }
+
+        .scrollbar-preview {
+            width: 8px;
+            height: 100px;
+            background: #c0c0c0;
+            border: 1px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            position: absolute;
+            right: 2px;
+            top: 2px;
+        }
+
+        .feedback-notification {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border: 2px solid;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 2000;
+            min-width: 200px;
+            text-align: center;
+            display: none;
+        }
+
+        .feedback-notification.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .feedback-notification.correct {
+            background-color: #90ee90;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            color: #006600;
+        }
+
+        .feedback-notification.incorrect {
+            background-color: #ffb6b6;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            color: #8b0000;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+        }
+
+        .feedback-notification.fade-out {
+            animation: slideDown 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <div class="title-bar">
+            <span>⬜ Big Bang Quest.exe</span>
+            <div class="title-bar-controls">
+                <div class="btn-min">_</div>
+                <div class="btn-max" id="btnMax" onclick="toggleMaximize()">□</div>
+                <div class="btn-close">✕</div>
+            </div>
+        </div>
+
+        <div class="menu-bar">
+            <div class="menu-item">File</div>
+            <div class="menu-item">Edit</div>
+            <div class="menu-item">View</div>
+            <div class="menu-item">Help</div>
+        </div>
+
+        <div class="main-content">
+            <div class="hud">
+                <div class="hud-item">
+                    <span class="hud-label">Level:</span>
+                    <span id="levelDisplay">1</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Score:</span>
+                    <span id="scoreDisplay">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Lives:</span>
+                    <span id="livesDisplay">3</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Progress:</span>
+                    <span id="progressDisplay">0%</span>
+                </div>
+            </div>
+
+            <div class="game-container">
+                <div class="game-area" style="position:relative;">
+                    <canvas id="gameCanvas"></canvas>
+                    <div id="celebrationOverlay" style="
+                        display:none; position:absolute; inset:0;
+                        align-items:flex-end; justify-content:center;
+                        padding-bottom:60px; pointer-events:none;">
+                        <div id="celebrationForm" style="
+                            pointer-events:auto; text-align:center;
+                            background:rgba(0,0,20,0.75);
+                            border:2px solid #88ccff;
+                            border-radius:8px; padding:14px 24px;">
+                            <div style="color:#ffff88;font-size:13px;font-family:'MS Sans Serif',Arial;margin-bottom:8px;letter-spacing:1px;">
+                                Enter your name, Space Explorer:
+                            </div>
+                            <input id="celebrationName" type="text" maxlength="24"
+                                onkeydown="if(event.key==='Enter') submitCelebrationName();"
+                                style="font-size:14px;padding:4px 10px;border:2px solid #88ccff;
+                                       background:#000820;color:#ffffff;border-radius:4px;
+                                       font-family:'MS Sans Serif',Arial;width:180px;" />
+                            <button onclick="submitCelebrationName()"
+                                style="margin-left:8px;padding:4px 14px;font-size:13px;
+                                       background:#000080;color:#fff;border:2px solid #88ccff;
+                                       border-radius:4px;cursor:pointer;font-family:'MS Sans Serif',Arial;">
+                                ✓
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <h4 style="color: #000080; margin-bottom: 8px; font-size: 12px;">LEVELS</h4>
+                    <ul class="level-list">
+                        <li class="level-item active" data-level="1">1. Definitions</li>
+                        <li class="level-item" data-level="2">2. Facts</li>
+                        <li class="level-item" data-level="3">3. Redshift</li>
+                        <li class="level-item" data-level="4">4. Galaxy Movement</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-field">Ready</div>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div class="modal" id="questionModal">
+        <div class="modal-content">
+            <div class="modal-title-bar">
+                <span id="questionTitle">Question</span>
+                <span style="cursor: pointer;" onclick="closeModal()">✕</span>
+            </div>
+            <div class="modal-body" id="questionBody"></div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="submitAnswer()">SUBMIT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Complete Modal -->
+    <div class="modal" id="levelCompleteModal">
+        <div class="modal-content">
+            <div class="modal-title-bar">
+                <span>Level Complete!</span>
+                <span style="cursor: pointer;" onclick="closeLevelModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 12px;">Great job! You've completed this level.</p>
+                <p id="levelReward" style="color: #008000; font-weight: bold;"></p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="nextLevel()">Next Level</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Feedback Notification -->
+    <div class="feedback-notification" id="feedbackNotification"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gameState = {
+            currentLevel: 1,
+            score: 0,
+            lives: 3,
+            playerX: 50,
+            playerY: 0,
+            levelProgress: 0,
+            questionsAnswered: 0,
+            questionsCorrect: 0,
+            playerVelX: 0,
+            playerVelY: 0,
+            playerDirection: 1, // 1 for right, -1 for left
+            playerAnimFrame: 0,
+            cameraX: 0,
+            cameraY: 0,
+            inExploration: false,
+            currentFact: null,
+            factPaperX: 0,
+            factPaperY: 0,
+            factDudeX: 0,
+            factDudeY: 0,
+            factDudeFound: false,
+            paperFound: false,
+            // Space dog battle
+            dogSpawned: false,
+            dogX: 0,
+            dogY: 0,
+            inBattle: false,
+            activeBattleEnemy: 'dog',
+            dogHealth: 3,
+            dogMaxHealth: 3,
+            // Space kitty (galaxy mode)
+            kittySpawned: false,
+            kittyX: 0,
+            kittyY: 0,
+            playerBattleHealth: 5,
+            playerMaxBattleHealth: 5,
+            battleTurn: 'player',
+            battleAnimating: false,
+            battleProjectile: null,
+            currentBattleFact: null,
+            battleDogFactDeck: [],
+            battleKittyFactDeck: [],
+            battleWaiting: false,
+            inGalaxyMode: false,
+            galaxyData: null,
+            inRedshiftMode: false,
+            redshiftData: { galaxies: [], lockedGalaxy: null, spectrumAnim: 0 },
+            inCelebration: false,
+            celebrationPhase: 0,
+            celebrationFrame: 0,
+            celebrationName: '',
+            celebrationDudes: [],
+            celebrationDogs: [],
+            celebrationKitties: []
+        };
+
+        let keyPressed = {};
+
+        const bgMusic = new Audio('background.mp3');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+        let bgMusicStarted = false;
+
+        function ensureMusicPlaying() {
+            if (!bgMusicStarted) {
+                bgMusicStarted = true;
+                bgMusic.play().catch(() => {});
+            }
+        }
+
+        const PLAYER_SPEED = 4;
+        const PLAYER_WIDTH = 20;
+        const PLAYER_HEIGHT = 30;
+        const LEVEL_WIDTH = 3000; // Extended world size
+        const SCREEN_WIDTH_UNITS = 800; // Absolute screen width in game units
+        let flags = [];
+        let currentFlagIndex = 0;
+
+        // Level data with Big Bang content
+        const levels = {
+            1: {
+                title: "Definitions",
+                questions: [
+                    {
+                        question: "What is the Big Bang?",
+                        options: [
+                            "The explosion of a star",
+                            "The theory that the universe began as a hot, dense point and has been expanding",
+                            "A type of supernova",
+                            "The collision of galaxies"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "What is a parsec?",
+                        options: [
+                            "A unit of mass",
+                            "A unit of time",
+                            "A unit of distance used in astronomy",
+                            "A type of telescope"
+                        ],
+                        correct: 2
+                    },
+                    {
+                        question: "Define redshift:",
+                        options: [
+                            "The brightening of light from distant objects",
+                            "The shifting of light toward the blue end of the spectrum",
+                            "The shifting of light toward the red end of the spectrum",
+                            "A type of star"
+                        ],
+                        correct: 2
+                    },
+                    {
+                        question: "What is a light-year?",
+                        options: [
+                            "The distance light travels in one year",
+                            "A unit of time in space",
+                            "The brightness of a star",
+                            "The age of a star"
+                        ],
+                        correct: 0
+                    },
+                    {
+                        question: "What is a galaxy?",
+                        options: [
+                            "A single star system",
+                            "A massive collection of stars, gas, and dust held together by gravity",
+                            "A type of nebula",
+                            "An asteroid belt"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "Define a supernova:",
+                        options: [
+                            "A dim, fading star",
+                            "A small star near Earth",
+                            "The explosive death of a star",
+                            "A newly formed star"
+                        ],
+                        correct: 2
+                    },
+                    {
+                        question: "What is dark matter?",
+                        options: [
+                            "Burned-out stars",
+                            "Matter that does not emit light but exerts gravitational effects",
+                            "Black holes and neutron stars",
+                            "Dust clouds in space"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "What is dark energy?",
+                        options: [
+                            "Energy from dying stars",
+                            "The mysterious force causing the universe's accelerated expansion",
+                            "Energy inside black holes",
+                            "Radiation from the sun"
+                        ],
+                        correct: 1
+                    }
+                ]
+            },
+            2: {
+                title: "Facts",
+                questions: [
+                    {
+                        question: "The universe is approximately how old?",
+                        options: [
+                            "4.6 billion years",
+                            "13.8 billion years",
+                            "100 billion years",
+                            "1 million years"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "What percentage of the universe is dark matter?",
+                        options: [
+                            "5%",
+                            "27%",
+                            "50%",
+                            "73%"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "The universe is expanding. True or False?",
+                        options: [
+                            "True",
+                            "False"
+                        ],
+                        correct: 0
+                    }
+                ]
+            },
+            3: {
+                title: "Redshift",
+                questions: [
+                    {
+                        question: "What is redshift?",
+                        options: [
+                            "The brightening of starlight as it travels through space",
+                            "The stretching of light wavelengths toward the red end of the spectrum as a source moves away",
+                            "The absorption of blue light by interstellar dust",
+                            "The cooling of a star's surface over time"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "What physical phenomenon explains the redshift of light from distant galaxies?",
+                        options: [
+                            "Gravitational lensing bending light around massive objects",
+                            "The Doppler effect — wavelengths stretch when a source moves away",
+                            "Nuclear fusion releasing energy at longer wavelengths",
+                            "Reflection of light off cosmic dust clouds"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "How do astronomers detect redshift in a galaxy's light?",
+                        options: [
+                            "By measuring how bright the galaxy appears",
+                            "By comparing the galaxy's spectrum to known spectral lines shifted toward longer wavelengths",
+                            "By counting the number of stars visible",
+                            "By timing how long the galaxy takes to orbit the Milky Way"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "Hubble's Law (v = H₀ × d) states that a galaxy's recession speed:",
+                        options: [
+                            "Is the same for all galaxies regardless of distance",
+                            "Decreases as distance increases",
+                            "Is proportional to its distance from the observer",
+                            "Depends on the galaxy's mass, not its distance"
+                        ],
+                        correct: 2
+                    },
+                    {
+                        question: "A galaxy at twice the distance of another galaxy will have a recession speed that is:",
+                        options: [
+                            "The same",
+                            "Four times greater",
+                            "Half as great",
+                            "Twice as great"
+                        ],
+                        correct: 3
+                    },
+                    {
+                        question: "The fact that nearly all galaxies show redshift (not blueshift) is evidence that:",
+                        options: [
+                            "All galaxies are rotating in the same direction",
+                            "The universe is expanding — most galaxies are moving away from us",
+                            "Light loses energy as it crosses empty space",
+                            "Only nearby galaxies are visible to telescopes"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "Which of the following would produce a blueshift instead of a redshift?",
+                        options: [
+                            "A galaxy moving away at high speed",
+                            "A galaxy at rest relative to Earth",
+                            "The Andromeda Galaxy moving toward the Milky Way",
+                            "A galaxy billions of light-years away"
+                        ],
+                        correct: 2
+                    }
+                ]
+            },
+            4: {
+                title: "Galaxy Movement (Redshift)",
+                questions: [
+                    {
+                        question: "What causes the observed redshift in distant galaxies?",
+                        options: [
+                            "Galaxies moving away from us (expansion of space)",
+                            "Dust between us and the galaxies",
+                            "Gravitational lensing",
+                            "The Doppler effect from stars moving toward us"
+                        ],
+                        correct: 0
+                    },
+                    {
+                        question: "Edwin Hubble's discovery showed that:",
+                        options: [
+                            "The universe is contracting",
+                            "The universe is static",
+                            "The universe is expanding",
+                            "Galaxies orbit around us"
+                        ],
+                        correct: 2
+                    },
+                    {
+                        question: "What does Hubble's Law (v = H₀ × d) state?",
+                        options: [
+                            "A galaxy's mass determines its brightness",
+                            "A galaxy's recession speed is proportional to its distance",
+                            "All galaxies move at the same speed",
+                            "Closer galaxies move faster than distant ones"
+                        ],
+                        correct: 1
+                    },
+                    {
+                        question: "A galaxy with a higher redshift value (z) is:",
+                        options: [
+                            "Closer to us and moving slowly",
+                            "Moving toward us",
+                            "Farther away and receding faster",
+                            "Older but stationary"
+                        ],
+                        correct: 2
+                    },
+                    {
+                        question: "The fact that galaxies recede in all directions means:",
+                        options: [
+                            "Earth is at the center of the universe",
+                            "Space itself is expanding uniformly in all directions",
+                            "Only the Milky Way is moving",
+                            "Gravity is pushing galaxies apart"
+                        ],
+                        correct: 1
+                    }
+                ]
+            }
+        };
+
+        let currentQuestion = null;
+        let currentQuestionIndex = 0;
+        let questionModalOpen = false;
+        let factModalOpen = false;
+
+        // Facts for discovery phase.
+        // Each entry has: fact (shown on paper), question/options/correct (asked by goofy dude),
+        // and trueStatement/falseStatement (used to generate Space Dog battle deck).
+        // HS-ESS1-2 aligned: redshift/light spectra, galaxy motion, and composition of matter.
+        const bigBangFacts = [
+            // --- REDSHIFT & LIGHT SPECTRA ---
+            {
+                fact: "Redshift occurs when a light source moves away from an observer, stretching the wavelength of light toward the red end of the spectrum.",
+                question: "What causes redshift in light from distant galaxies?",
+                options: ["The galaxy is heating up", "The galaxy is moving away, stretching the light's wavelength", "The light is absorbed by dust", "The galaxy is rotating"],
+                correct: 1,
+                trueStatement: "Redshift occurs when a galaxy moves away from us, stretching its light toward the red end.",
+                falseStatement: "Redshift occurs when a galaxy moves toward us, compressing its light toward the red end."
+            },
+            {
+                fact: "About 380,000 years after the Big Bang, the universe cooled enough for protons and electrons to combine into neutral hydrogen atoms - called recombination.",
+                question: "What event occurred approximately 380,000 years after the Big Bang?",
+                options: ["The first galaxies formed", "Protons and electrons combined into neutral hydrogen atoms (recombination)", "The universe stopped expanding", "The first stars ignited"],
+                correct: 1,
+                trueStatement: "Recombination - protons and electrons combining into neutral hydrogen - occurred about 380,000 years after the Big Bang.",
+                falseStatement: "Recombination occurred at the very moment of the Big Bang, not hundreds of thousands of years later."
+            },
+            {
+                fact: "The Doppler effect causes light from a galaxy moving away to be stretched toward longer, redder wavelengths - this is redshift.",
+                question: "The Doppler effect applied to light from a receding galaxy produces what?",
+                options: ["Blueshift", "Redshift", "Brighter light", "X-rays"],
+                correct: 1,
+                trueStatement: "The Doppler effect on a receding galaxy stretches its light, producing redshift.",
+                falseStatement: "The Doppler effect on a receding galaxy compresses its light, producing blueshift."
+            },
+            {
+                fact: "Blueshift occurs when a light source moves toward an observer. Only a few nearby galaxies, like Andromeda, show blueshift.",
+                question: "Which galaxies show blueshift rather than redshift?",
+                options: ["All distant galaxies", "Only a few nearby galaxies moving toward us", "Only the Milky Way", "Galaxies with black holes"],
+                correct: 1,
+                trueStatement: "Only a few nearby galaxies moving toward us, like Andromeda, show blueshift.",
+                falseStatement: "All distant galaxies show blueshift because they are moving toward us."
+            },
+            {
+                fact: "When astronomers analyze the spectrum of a distant galaxy, absorption lines appear shifted toward the red end compared to lab measurements - proving the galaxy is receding.",
+                question: "How do astronomers use spectra to determine a galaxy is moving away?",
+                options: ["The galaxy appears dimmer", "Absorption lines are shifted toward the red end", "The galaxy emits more X-rays", "Stars in the galaxy appear hotter"],
+                correct: 1,
+                trueStatement: "Absorption lines shifted toward the red end of a galaxy's spectrum prove it is moving away.",
+                falseStatement: "Absorption lines shifted toward the blue end of a galaxy's spectrum prove it is moving away."
+            },
+            {
+                fact: "The amount of redshift (z) measures how fast a galaxy is receding. A higher z value means the galaxy is moving away faster.",
+                question: "What does a higher redshift value (z) indicate about a galaxy?",
+                options: ["It is closer to us", "It is moving away faster", "It is moving toward us", "It is more massive"],
+                correct: 1,
+                trueStatement: "A higher redshift value (z) means a galaxy is moving away from us faster.",
+                falseStatement: "A higher redshift value (z) means a galaxy is moving toward us faster."
+            },
+            {
+                fact: "Because light takes time to travel, the redshift of very distant galaxies shows us the universe as it was billions of years ago - the universe was smaller and denser then.",
+                question: "What does the redshift of very distant galaxies tell us about the early universe?",
+                options: ["It was larger than today", "It was smaller and denser", "It was the same size", "It had more heavy elements"],
+                correct: 1,
+                trueStatement: "The redshift of distant galaxies reveals the early universe was smaller and denser than it is today.",
+                falseStatement: "The redshift of distant galaxies reveals the early universe was larger and more spread out than today."
+            },
+            {
+                fact: "Edwin Hubble used Cepheid variable stars as 'standard candles' to measure distances to galaxies and then compared those distances to their redshifts.",
+                question: "How did Hubble measure distances to galaxies to compare with redshift?",
+                options: ["Radar signals", "Cepheid variable stars as standard candles", "Radio telescopes", "Gravitational lensing"],
+                correct: 1,
+                trueStatement: "Hubble used Cepheid variable stars as standard candles to measure distances to galaxies.",
+                falseStatement: "Hubble used radar signals bounced off distant galaxies to measure their distances."
+            },
+            // --- MOTION OF DISTANT GALAXIES ---
+            {
+                fact: "In 1929, Edwin Hubble published evidence that nearly all galaxies are moving away from us, and the farther a galaxy, the faster it recedes.",
+                question: "What did Hubble's 1929 observations reveal?",
+                options: ["Galaxies orbit the Milky Way", "The farther a galaxy, the faster it recedes from us", "The universe is contracting", "Stars are evenly distributed in space"],
+                correct: 1,
+                trueStatement: "Hubble's 1929 observations showed that the farther a galaxy is, the faster it recedes from us.",
+                falseStatement: "Hubble's 1929 observations showed that the universe is slowly contracting toward a central point."
+            },
+            {
+                fact: "Hubble's Law states that a galaxy's recession speed is proportional to its distance: v = H₀ × d.",
+                question: "What does Hubble's Law (v = H₀ × d) describe?",
+                options: ["The mass of a galaxy", "The relationship between a galaxy's distance and its recession speed", "The temperature of a star", "The size of the observable universe"],
+                correct: 1,
+                trueStatement: "Hubble's Law (v = H₀ × d) describes how a galaxy's recession speed is proportional to its distance.",
+                falseStatement: "Hubble's Law describes the relationship between a galaxy's mass and its temperature."
+            },
+            {
+                fact: "The observation that galaxies are moving away in all directions - not just from us - means space itself is expanding uniformly in all directions.",
+                question: "Why does the fact that galaxies recede in all directions indicate expanding space rather than Earth being at the center?",
+                options: ["Earth is at the center of the universe", "Space itself is expanding, so every point moves away from every other", "Galaxies are being pushed by a central force", "The Milky Way is unusually massive"],
+                correct: 1,
+                trueStatement: "Galaxies receding in all directions indicates space itself is expanding - not that Earth is at the center.",
+                falseStatement: "Galaxies receding in all directions proves that Earth is at the center of the universe."
+            },
+            {
+                fact: "If galaxy recession is traced backward in time, all matter converges to a single hot, dense point - evidence the universe began in a Big Bang.",
+                question: "What does reversing galaxy recession velocities through time imply?",
+                options: ["The universe has always been the same size", "All matter once occupied a single hot, dense point", "Galaxies formed before the Big Bang", "The universe will collapse"],
+                correct: 1,
+                trueStatement: "Tracing galaxy recession backward in time leads to all matter once occupying a single hot, dense point.",
+                falseStatement: "Tracing galaxy recession backward in time shows the universe has always been the same size."
+            },
+            {
+                fact: "The Hubble constant (H₀) relates recession speed to distance. Its value (~70 km/s/Mpc) allows scientists to estimate the age of the universe.",
+                question: "How does the Hubble constant help scientists determine the age of the universe?",
+                options: ["By measuring star temperatures", "By relating recession speed to distance and calculating when expansion began", "By counting galaxies", "By measuring gravitational waves"],
+                correct: 1,
+                trueStatement: "The Hubble constant relates recession speed to distance, allowing scientists to estimate the age of the universe.",
+                falseStatement: "The Hubble constant measures the average temperature of the universe, not its expansion rate."
+            },
+            {
+                fact: "Galaxy clusters millions of light-years apart are all receding - no galaxy is moving toward the Big Bang's location because there is no central location; the expansion happened everywhere.",
+                question: "Where did the Big Bang happen in space?",
+                options: ["At the center of the Milky Way", "Everywhere simultaneously - there is no central location", "At the edge of the observable universe", "Where the largest black hole is"],
+                correct: 1,
+                trueStatement: "The Big Bang happened everywhere simultaneously - there is no single central location it occurred.",
+                falseStatement: "The Big Bang happened at the center of the Milky Way galaxy."
+            },
+            // --- COMPOSITION OF MATTER ---
+            {
+                fact: "Big Bang nucleosynthesis predicted that the early universe would produce about 75% hydrogen and 25% helium by mass - observations of ancient stars match this ratio.",
+                question: "What hydrogen-to-helium ratio did Big Bang nucleosynthesis predict, and does observation confirm it?",
+                options: ["50/50 - confirmed", "75% H / 25% He - confirmed by ancient star observations", "90% H / 10% He - not confirmed", "99% H / 1% He - confirmed"],
+                correct: 1,
+                trueStatement: "Big Bang nucleosynthesis predicted ~75% hydrogen and ~25% helium by mass, confirmed by ancient star observations.",
+                falseStatement: "Big Bang nucleosynthesis predicted roughly equal amounts of hydrogen and helium, but observations show something different."
+            },
+            {
+                fact: "The observed cosmic abundance of hydrogen and helium is a key piece of evidence for the Big Bang - no other known process produces this specific ratio.",
+                question: "Why is the 75% hydrogen / 25% helium abundance considered evidence for the Big Bang?",
+                options: ["Stars produce this ratio today", "No other known process produces this exact ratio", "It matches the composition of Earth", "It is the most stable mix of elements"],
+                correct: 1,
+                trueStatement: "The 75% H / 25% He cosmic ratio is evidence for the Big Bang because no other known process produces it.",
+                falseStatement: "Stars burning today easily produce the same 75% H / 25% He ratio found throughout the universe."
+            },
+            {
+                fact: "Heavier elements like carbon, oxygen, and iron were NOT produced in the Big Bang - they formed later inside stars and were dispersed by supernovae.",
+                question: "Where were heavier elements like carbon, oxygen, and iron produced?",
+                options: ["In the Big Bang", "Inside stars and dispersed by supernovae", "In black holes", "In nebulae before the Big Bang"],
+                correct: 1,
+                trueStatement: "Heavier elements like carbon and iron formed inside stars and were scattered into space by supernovae.",
+                falseStatement: "Heavier elements like carbon and iron were produced during the Big Bang along with hydrogen and helium."
+            },
+            {
+                fact: "The uniformity of hydrogen and helium abundances across widely separated regions of the universe supports the idea of a common origin - the Big Bang.",
+                question: "What does the uniform abundance of hydrogen and helium throughout the universe suggest?",
+                options: ["Elements form randomly in all galaxies", "All matter shares a common origin - the Big Bang", "Stars produce the same elements everywhere", "The universe has no center"],
+                correct: 1,
+                trueStatement: "The uniform H/He abundance across the universe suggests all matter shares a common origin - the Big Bang.",
+                falseStatement: "Different regions of the universe have very different hydrogen-to-helium ratios, suggesting no common origin."
+            },
+            {
+                fact: "The Cosmic Microwave Background (CMB) is thermal radiation left over from when the universe cooled enough for photons to travel freely - about 380,000 years after the Big Bang.",
+                question: "What event produced the Cosmic Microwave Background radiation?",
+                options: ["The first stars igniting", "The universe cooling enough for photons to travel freely at ~380,000 years", "A supernova explosion", "The formation of galaxies"],
+                correct: 1,
+                trueStatement: "The CMB is leftover radiation from when the universe cooled enough for photons to travel freely, about 380,000 years after the Big Bang.",
+                falseStatement: "The CMB was produced by the first stars igniting billions of years after the Big Bang."
+            },
+            {
+                fact: "The CMB temperature is nearly uniform at 2.7 Kelvin across the entire sky, indicating the early universe was extremely hot, dense, and uniform.",
+                question: "What does the near-uniformity of the CMB temperature tell us about the early universe?",
+                options: ["It was cold and spread out", "It was extremely hot, dense, and uniform", "It already had galaxies", "It was mostly empty"],
+                correct: 1,
+                trueStatement: "The CMB's near-uniform temperature of 2.7 Kelvin across the sky indicates the early universe was hot, dense, and uniform.",
+                falseStatement: "The CMB temperature varies wildly in different directions, showing the early universe was highly irregular."
+            },
+            {
+                fact: "Tiny temperature fluctuations in the CMB (about 1 part in 100,000) represent density variations that eventually grew into galaxies and large-scale structure.",
+                question: "What are the tiny temperature fluctuations in the CMB?",
+                options: ["Measurement errors", "Density variations that seeded galaxy formation", "Radiation from stars", "Evidence of dark matter collisions"],
+                correct: 1,
+                trueStatement: "Tiny CMB temperature fluctuations (1 part in 100,000) are density variations that seeded the formation of galaxies.",
+                falseStatement: "The tiny temperature fluctuations in the CMB are simply measurement errors with no physical significance."
+            },
+            {
+                fact: "The CMB was first detected accidentally in 1965 by Arno Penzias and Robert Wilson as unexplained 'noise' in a microwave antenna - they won the Nobel Prize for the discovery.",
+                question: "How was the CMB first detected?",
+                options: ["By a space telescope designed for it", "Accidentally as unexplained microwave noise by Penzias and Wilson", "By measuring galaxy spectra", "Through gravitational wave detectors"],
+                correct: 1,
+                trueStatement: "Penzias and Wilson accidentally discovered the CMB in 1965 as unexplained noise in a microwave antenna.",
+                falseStatement: "The CMB was first detected intentionally by a purpose-built NASA space telescope in the 1980s."
+            },
+            {
+                fact: "Light spectra from the most distant (oldest) galaxies show they are composed almost entirely of hydrogen and helium, consistent with Big Bang nucleosynthesis.",
+                question: "What do the spectra of the oldest, most distant galaxies show about their composition?",
+                options: ["Mostly heavy metals", "Almost entirely hydrogen and helium, consistent with Big Bang nucleosynthesis", "Equal amounts of all elements", "Mostly carbon and oxygen"],
+                correct: 1,
+                trueStatement: "Spectra of the oldest, most distant galaxies show they are composed almost entirely of hydrogen and helium.",
+                falseStatement: "Spectra of the oldest galaxies show they are rich in heavy elements like iron, carbon, and oxygen."
+            }
+        ];
+
+        // Dog battle facts are derived directly from bigBangFacts — one true and one false statement per fact entry.
+        const dogBattleFacts = bigBangFacts.flatMap(f => [
+            { statement: f.trueStatement, isTrue: true },
+            { statement: f.falseStatement, isTrue: false }
+        ]);
+
+        // Kitty battle facts — galaxy movement & Hubble's Law (NYSSLS HS-ESS1-2)
+        const kittyBattleFacts = [
+            {
+                statement: "Hubble's Law states that a galaxy's recession speed is proportional to its distance from us.",
+                isTrue: true
+            },
+            {
+                statement: "Hubble's Law states that a galaxy's recession speed is inversely proportional to its distance — closer galaxies recede faster.",
+                isTrue: false
+            },
+            {
+                statement: "Nearly all observed galaxies show redshift, meaning they are moving away from Earth.",
+                isTrue: true
+            },
+            {
+                statement: "Nearly all observed galaxies show blueshift, meaning they are moving toward Earth.",
+                isTrue: false
+            },
+            {
+                statement: "A galaxy twice as far away recedes at twice the speed, consistent with Hubble's Law.",
+                isTrue: true
+            },
+            {
+                statement: "All galaxies recede at the same speed regardless of their distance, which is what Hubble's Law shows.",
+                isTrue: false
+            },
+            {
+                statement: "The Andromeda Galaxy (M31) is an exception to the general trend — it shows blueshift and is moving toward the Milky Way.",
+                isTrue: true
+            },
+            {
+                statement: "The Andromeda Galaxy shows redshift like all other galaxies, confirming that no galaxy moves toward us.",
+                isTrue: false
+            },
+            {
+                statement: "The expansion of the universe means that space itself is stretching — galaxies are not flying through space but being carried apart by expanding spacetime.",
+                isTrue: true
+            },
+            {
+                statement: "Galaxy recession is caused by galaxies actively accelerating through space away from the Milky Way.",
+                isTrue: false
+            },
+            {
+                statement: "From any galaxy's perspective, all other galaxies appear to be receding — there is no special center of expansion.",
+                isTrue: true
+            },
+            {
+                statement: "The Milky Way is the center of the universe's expansion, which is why all galaxies appear to move away from us.",
+                isTrue: false
+            },
+            {
+                statement: "Edwin Hubble used Cepheid variable stars as distance markers to establish the relationship between galaxy distance and recession speed.",
+                isTrue: true
+            },
+            {
+                statement: "Hubble calculated galaxy distances using the apparent brightness of supernovae in 1929, which is what led to the discovery of the expansion law.",
+                isTrue: false
+            },
+            {
+                statement: "The Hubble constant (H₀) describes the current rate of expansion of the universe and has units of km/s per megaparsec.",
+                isTrue: true
+            },
+            {
+                statement: "The Hubble constant describes how fast individual stars move within galaxies, not the expansion rate of the universe.",
+                isTrue: false
+            },
+        ];
+
+
+        function shuffleQuestionOptions(question) {
+            const indices = question.options.map((_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            return {
+                ...question,
+                options: indices.map(i => question.options[i]),
+                correct: indices.indexOf(question.correct)
+            };
+        }
+
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function toggleMaximize() {
+            const win = document.querySelector('.window');
+            const btn = document.getElementById('btnMax');
+            const isMax = win.classList.toggle('maximized');
+            document.body.classList.toggle('maximized', isMax);
+            btn.textContent = isMax ? '❐' : '□';
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            const container = document.querySelector('.game-area');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        function drawGame() {
+            if (gameState.inCelebration) {
+                drawCelebration();
+                return;
+            }
+
+            if (gameState.inBattle) {
+                drawBattleMode();
+                return;
+            }
+
+            if (gameState.inExploration || gameState.inGalaxyMode || gameState.inRedshiftMode) {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                // Draw sky and ground
+                ctx.fillStyle = '#87ceeb';
+                ctx.fillRect(0, 0, canvas.width, canvas.height * 0.6);
+
+                ctx.fillStyle = '#90ee90';
+                ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.4);
+            }
+
+            if (gameState.inRedshiftMode) {
+                drawRedshiftContent();
+            } else if (gameState.inGalaxyMode) {
+                drawGalaxyContent();
+            } else if (gameState.inExploration) {
+                drawExplorationContent();
+            } else {
+                drawLevelContent();
+            }
+
+            // Draw player - camera offset applies in all non-battle modes
+            const screenPlayerX = gameState.playerX - gameState.cameraX;
+            const screenPlayerY = (gameState.inExploration || gameState.inGalaxyMode || gameState.inRedshiftMode) ? gameState.playerY - gameState.cameraY
+                : gameState.playerY;
+            const eyeLeftX = gameState.playerDirection === 1 ? 4 : 12;
+            const eyeRightX = gameState.playerDirection === 1 ? 12 : 4;
+            const smileX = gameState.playerDirection === 1 ? 5 : 10;
+            const leg1X = gameState.playerDirection === 1 ? 5 : 12;
+            const leg2X = gameState.playerDirection === 1 ? 12 : 5;
+
+            // Draw body
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(screenPlayerX, screenPlayerY, PLAYER_WIDTH, PLAYER_HEIGHT);
+
+            // Draw eyes
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(screenPlayerX + eyeLeftX, screenPlayerY + 6, 4, 4);
+            ctx.fillRect(screenPlayerX + eyeRightX, screenPlayerY + 6, 4, 4);
+
+            // Draw pupils
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(screenPlayerX + eyeLeftX + 1, screenPlayerY + 7, 2, 2);
+            ctx.fillRect(screenPlayerX + eyeRightX + 1, screenPlayerY + 7, 2, 2);
+
+            // Draw smile
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(screenPlayerX + smileX, screenPlayerY + 15, 10, 2);
+
+            // Draw animated legs
+            const legOffset = Math.abs(Math.sin(gameState.playerAnimFrame * 0.1)) * 3;
+            ctx.fillStyle = '#0066cc';
+            ctx.fillRect(screenPlayerX + leg1X, screenPlayerY + 28, 3, 2 + legOffset);
+            ctx.fillRect(screenPlayerX + leg2X, screenPlayerY + 28, 3, 2 - legOffset);
+
+            // Draw health bar above player
+            const healthBarWidth = 30;
+            const healthBarHeight = 4;
+            const healthBarX = screenPlayerX + (PLAYER_WIDTH - healthBarWidth) / 2;
+            const healthBarY = screenPlayerY - 10;
+
+            // Background (red)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+            // Health (green)
+            const maxHealth = 3;
+            const healthWidth = (gameState.lives / maxHealth) * healthBarWidth;
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(healthBarX, healthBarY, healthWidth, healthBarHeight);
+
+            // Border
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+            // Draw HUD text
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(`Level ${gameState.currentLevel}: ${levels[gameState.currentLevel].title}`, 10, 20);
+            ctx.font = '10px Arial';
+            ctx.fillText(`Score: ${gameState.score} | Lives: ${gameState.lives}`, 10, 35);
+
+            // Draw controls hint
+            ctx.font = '9px Arial';
+            ctx.fillStyle = '#666666';
+            ctx.fillText('A/D or Arrow Keys to move', 10, canvas.height - 5);
+        }
+
+        function drawTree(worldX, screenX, height) {
+            const treeBaseY = canvas.height * 0.65;
+
+            if (screenX < -50 || screenX > canvas.width + 50) return;
+
+            // Trunk
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(screenX - 5, treeBaseY - height, 10, height);
+
+            // How many of the 3 clusters have become galaxies
+            const totalQ = levels[1].questions.length;
+            const galaxyCount = Math.min(3, Math.floor((gameState.questionsAnswered / totalQ) * 3 + 0.001));
+
+            const rng = s => Math.abs(Math.sin(s * 9301 + 49297) * 233280) % 1;
+            const baseRot = rng(worldX * 0.01) * Math.PI * 2;
+            const pulse = gameState.playerAnimFrame * 0.06;
+            const galaxyColors = ['#aaccff', '#ccddff', '#ddccff'];
+
+            // [dx, dy, radius] for each cluster
+            const clusters = [
+                [0,  -15, 20],
+                [-12, -5, 15],
+                [12,  -5, 15],
+            ];
+
+            clusters.forEach(([dx, dy, r], i) => {
+                const cx = screenX + dx;
+                const cy = treeBaseY - height + dy;
+                if (i < galaxyCount) {
+                    drawSpiralGalaxy(cx, cy, r * 0.85, baseRot + i * 1.2, galaxyColors[i % galaxyColors.length], false, pulse);
+                } else {
+                    ctx.fillStyle = '#228b22';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawEnemy(screenX, screenY, defeated, enemyType, isFalling, rotation, opacity) {
+            // Only draw if visible
+            if (screenX < -50 || screenX > canvas.width + 50) return;
+
+            // Skip drawing if fully faded
+            if (opacity <= 0) return;
+
+            // Bob animation when standing idle — each enemy has a different phase
+            if (!isFalling && !defeated) {
+                screenY += Math.sin(gameState.playerAnimFrame * 0.05 + enemyType * 1.3) * 4;
+            }
+
+            // Save canvas state for rotation and opacity
+            ctx.save();
+            ctx.globalAlpha = opacity;
+
+            if (isFalling && rotation !== 0) {
+                ctx.translate(screenX, screenY);
+                ctx.rotate(rotation);
+                ctx.translate(-screenX, -screenY);
+            }
+
+            // Color based on defeated status and falling state
+            let bodyColor = defeated ? '#90ee90' : ['#ff00ff', '#00ffff', '#ffff00', '#ff6b6b'][enemyType % 4];
+            if (isFalling) {
+                bodyColor = '#ff0000'; // Turn red when falling/attacking
+            }
+
+            // Body - irregular shape for funky look
+            ctx.fillStyle = bodyColor;
+            ctx.fillRect(screenX - 12, screenY - 30, 24, 35);
+
+            // Head - wobby circle
+            ctx.beginPath();
+            ctx.arc(screenX, screenY - 35, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes - googly and wild
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(screenX - 4, screenY - 37, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(screenX + 5, screenY - 36, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils - off-center and crazy
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(screenX - 3, screenY - 38, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(screenX + 6, screenY - 35, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth - wavy line
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(screenX - 3, screenY - 32);
+            ctx.quadraticCurveTo(screenX, screenY - 30, screenX + 3, screenY - 32);
+            ctx.stroke();
+
+            // Weird arms - different lengths
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(screenX - 12, screenY - 15);
+            ctx.lineTo(screenX - 25, screenY - 10);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(screenX + 12, screenY - 15);
+            ctx.lineTo(screenX + 28, screenY - 5);
+            ctx.stroke();
+
+            // Spiky hair
+            ctx.fillStyle = bodyColor;
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI;
+                const spikeX = screenX + Math.cos(angle) * 12;
+                const spikeY = screenY - 42 + Math.sin(angle) * 5;
+                ctx.fillRect(spikeX - 1.5, spikeY - 4, 3, 4);
+            }
+
+            // Enemy number
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('?', screenX, screenY - 8);
+            ctx.textAlign = 'left';
+
+            // Restore canvas state
+            ctx.restore();
+        }
+
+        function drawExplorationContent() {
+            // Draw starfield
+            drawStarfield();
+
+            // Draw paper
+            const paperScreenX = gameState.factPaperX - gameState.cameraX;
+            const paperScreenY = gameState.factPaperY - gameState.cameraY;
+
+            // Check if paper is on screen
+            const paperOnScreen = paperScreenX > -50 && paperScreenX < canvas.width + 50 &&
+                                  paperScreenY > -50 && paperScreenY < canvas.height + 50;
+
+            if (paperOnScreen) {
+                // Draw paper sprite
+                ctx.save();
+                ctx.globalAlpha = gameState.explorationOpacity || 1;
+                ctx.fillStyle = '#ffffcc';
+                ctx.fillRect(paperScreenX - 15, paperScreenY - 25, 30, 50);
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(paperScreenX - 15, paperScreenY - 25, 30, 50);
+
+                // Draw lines on paper to look like text
+                ctx.strokeStyle = '#333333';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 4; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(paperScreenX - 12, paperScreenY - 20 + i * 8);
+                    ctx.lineTo(paperScreenX + 12, paperScreenY - 20 + i * 8);
+                    ctx.stroke();
+                }
+
+                // Glow effect if not found
+                if (!gameState.paperFound) {
+                    ctx.strokeStyle = '#ffff00';
+                    ctx.lineWidth = 3;
+                    ctx.globalAlpha = (gameState.explorationOpacity || 1) * 0.5;
+                    ctx.strokeRect(paperScreenX - 20, paperScreenY - 30, 40, 60);
+                }
+                ctx.restore();
+            } else if (!gameState.paperFound) {
+                // Draw arrow pointing to off-screen paper
+                drawDirectionalArrow(gameState.factPaperX, gameState.factPaperY, '#ffff00');
+            }
+
+            // Draw fact dude if paper is found
+            if (gameState.paperFound) {
+                const dudeScreenX = gameState.factDudeX - gameState.cameraX;
+                const dudeScreenY = gameState.factDudeY - gameState.cameraY;
+
+                const dudeOnScreen = dudeScreenX > -50 && dudeScreenX < canvas.width + 50 &&
+                                     dudeScreenY > -50 && dudeScreenY < canvas.height + 50;
+
+                if (dudeOnScreen) {
+                    drawEnemy(dudeScreenX, dudeScreenY, false, 0, false, 0, gameState.explorationOpacity || 1);
+                } else if (!gameState.factDudeFound) {
+                    // Draw arrow pointing to off-screen dude
+                    drawDirectionalArrow(gameState.factDudeX, gameState.factDudeY, '#ff00ff');
+                }
+            }
+
+            // Draw space dog if spawned
+            if (gameState.dogSpawned && !gameState.inBattle) {
+                const dogScreenX = gameState.dogX - gameState.cameraX;
+                const dogScreenY = gameState.dogY - gameState.cameraY;
+                const dogOnScreen = dogScreenX > -80 && dogScreenX < canvas.width + 80 &&
+                                    dogScreenY > -80 && dogScreenY < canvas.height + 80;
+                if (dogOnScreen) {
+                    drawSpaceDog(dogScreenX, dogScreenY, 1);
+                } else {
+                    drawDirectionalArrow(gameState.dogX, gameState.dogY, '#ff4400');
+                }
+            }
+
+            // Draw distance indicators and info
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
+
+            // Facts progress
+            const factsAnswered = gameState.factsAnswered || 0;
+            ctx.fillStyle = '#ffff99';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(`Facts Discovered: ${factsAnswered}/6`, 10, 30);
+        }
+
+        function drawDirectionalArrow(targetX, targetY, color) {
+            // Calculate direction to target
+            const dx = targetX - gameState.playerX;
+            const dy = targetY - gameState.playerY;
+            const angle = Math.atan2(dy, dx);
+
+            // Calculate arrow position on screen edge
+            const padding = 20;
+            let arrowX, arrowY;
+            let onEdge = null;
+
+            const screenCenterX = canvas.width / 2;
+            const screenCenterY = canvas.height / 2;
+
+            // Determine which edge the target is beyond
+            const slope = dy / (dx || 0.001);
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Target is more left/right than up/down
+                if (dx > 0) {
+                    // Right edge
+                    arrowX = canvas.width - padding;
+                    arrowY = screenCenterY + slope * (canvas.width / 2 - padding);
+                    onEdge = 'right';
+                } else {
+                    // Left edge
+                    arrowX = padding;
+                    arrowY = screenCenterY - slope * (canvas.width / 2 - padding);
+                    onEdge = 'left';
+                }
+            } else {
+                // Target is more up/down than left/right
+                if (dy > 0) {
+                    // Bottom edge
+                    arrowY = canvas.height - padding;
+                    arrowX = screenCenterX + (canvas.height / 2 - padding) / slope;
+                    onEdge = 'bottom';
+                } else {
+                    // Top edge
+                    arrowY = padding;
+                    arrowX = screenCenterX - (canvas.height / 2 - padding) / slope;
+                    onEdge = 'top';
+                }
+            }
+
+            // Clamp to screen corners
+            arrowX = Math.max(padding, Math.min(canvas.width - padding, arrowX));
+            arrowY = Math.max(padding, Math.min(canvas.height - padding, arrowY));
+
+            // Draw arrow
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+
+            // Translate to arrow position
+            ctx.translate(arrowX, arrowY);
+            ctx.rotate(angle);
+
+            // Draw arrow head
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-12, -8);
+            ctx.lineTo(-12, 8);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw arrow shaft
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-15, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawStarfield() {
+            // Draw stars based on player position for parallax effect
+            const starDensity = 0.0001; // Stars per square unit
+            const starSize = 1;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 0.8;
+
+            // Generate stars in grid cells around the camera
+            const cellSize = 100;
+            const startCellX = Math.floor((gameState.cameraX - canvas.width) / cellSize);
+            const startCellY = Math.floor((gameState.cameraY - canvas.height) / cellSize);
+            const endCellX = Math.floor((gameState.cameraX + canvas.width * 2) / cellSize);
+            const endCellY = Math.floor((gameState.cameraY + canvas.height * 2) / cellSize);
+
+            for (let cellX = startCellX; cellX <= endCellX; cellX++) {
+                for (let cellY = startCellY; cellY <= endCellY; cellY++) {
+                    // Use cell coordinates as seed for consistent star positions
+                    const seed = cellX * 73856093 ^ cellY * 19349663;
+                    const random = Math.abs(Math.sin(seed) * 10000) % 1;
+
+                    // Place stars using seeded randomness
+                    const starsInCell = Math.floor(starDensity * cellSize * cellSize);
+                    for (let i = 0; i < starsInCell; i++) {
+                        const starSeed = seed + i * 12345;
+                        const starX = cellX * cellSize + (Math.sin(starSeed) * cellSize / 2 + cellSize / 2);
+                        const starY = cellY * cellSize + (Math.cos(starSeed * 2) * cellSize / 2 + cellSize / 2);
+
+                        const screenX = starX - gameState.cameraX;
+                        const screenY = starY - gameState.cameraY;
+
+                        if (screenX > 0 && screenX < canvas.width && screenY > 0 && screenY < canvas.height) {
+                            ctx.fillRect(screenX, screenY, starSize, starSize);
+                        }
+                    }
+                }
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        // ---- SPACE DOG SPRITE ----
+        function drawSpaceDog(x, y, opacity) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+
+            // Body
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 20, y - 25, 40, 30);
+
+            // Head
+            ctx.fillStyle = '#A0522D';
+            ctx.beginPath();
+            ctx.arc(x, y - 35, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Space helmet (glass dome)
+            ctx.strokeStyle = '#88ccff';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = opacity * 0.5;
+            ctx.beginPath();
+            ctx.arc(x, y - 35, 20, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = opacity;
+
+            // Eyes (googly)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(x - 7, y - 37, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + 7, y - 37, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.arc(x - 6, y - 37, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + 8, y - 36, 2.5, 0, Math.PI * 2); ctx.fill();
+
+            // Snout
+            ctx.fillStyle = '#c97040';
+            ctx.fillRect(x - 8, y - 30, 16, 10);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x - 4, y - 28, 8, 4); // nose
+
+            // Ears (floppy)
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.ellipse(x - 18, y - 42, 7, 14, -0.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + 18, y - 42, 7, 14, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Legs
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 18, y + 5, 8, 14);
+            ctx.fillRect(x + 10, y + 5, 8, 14);
+
+            // Tail (wagging)
+            const wag = Math.sin(gameState.playerAnimFrame * 0.15) * 10;
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x + 20, y - 5);
+            ctx.quadraticCurveTo(x + 35, y - 15 + wag, x + 40, y - 25 + wag);
+            ctx.stroke();
+
+            // Space helmet ring — front arc only, so it appears to wrap behind the head
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(x, y - 18, 18, 5, 0, 0.15, Math.PI - 0.15);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ---- SPACE KITTY SPRITE ----
+        function drawSpaceKitty(x, y, opacity) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+
+            // Body
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(x - 18, y - 22, 36, 28);
+
+            // Head
+            ctx.fillStyle = '#aaaaaa';
+            ctx.beginPath();
+            ctx.arc(x, y - 32, 16, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pointy ears
+            ctx.fillStyle = '#aaaaaa';
+            ctx.beginPath();
+            ctx.moveTo(x - 14, y - 44);
+            ctx.lineTo(x - 20, y - 60);
+            ctx.lineTo(x - 5,  y - 46);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + 14, y - 44);
+            ctx.lineTo(x + 20, y - 60);
+            ctx.lineTo(x + 5,  y - 46);
+            ctx.closePath();
+            ctx.fill();
+
+            // Inner ear
+            ctx.fillStyle = '#ffaacc';
+            ctx.beginPath();
+            ctx.moveTo(x - 13, y - 46);
+            ctx.lineTo(x - 18, y - 57);
+            ctx.lineTo(x - 7,  y - 47);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + 13, y - 46);
+            ctx.lineTo(x + 18, y - 57);
+            ctx.lineTo(x + 7,  y - 47);
+            ctx.closePath();
+            ctx.fill();
+
+            // Space helmet dome
+            ctx.strokeStyle = '#88ccff';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = opacity * 0.5;
+            ctx.beginPath();
+            ctx.arc(x, y - 32, 20, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = opacity;
+
+            // Eyes (slit pupils)
+            ctx.fillStyle = '#55ff88';
+            ctx.beginPath(); ctx.ellipse(x - 6, y - 34, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(x + 6, y - 34, 4, 5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.ellipse(x - 6, y - 34, 1.2, 4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(x + 6, y - 34, 1.2, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+            // Nose
+            ctx.fillStyle = '#ff99bb';
+            ctx.beginPath();
+            ctx.moveTo(x, y - 27);
+            ctx.lineTo(x - 3, y - 23);
+            ctx.lineTo(x + 3, y - 23);
+            ctx.closePath();
+            ctx.fill();
+
+            // Whiskers
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = opacity * 0.8;
+            [[-1, 1], [-1, 0], [1, 1], [1, 0]].forEach(([side, row]) => {
+                ctx.beginPath();
+                ctx.moveTo(x + side * 4, y - 25 + row * 3);
+                ctx.lineTo(x + side * 22, y - 26 + row * 4);
+                ctx.stroke();
+            });
+            ctx.globalAlpha = opacity;
+
+            // Helmet collar ring — front arc only
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(x, y - 14, 16, 5, 0, 0.15, Math.PI - 0.15);
+            ctx.stroke();
+
+            // Legs
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(x - 16, y + 6, 7, 12);
+            ctx.fillRect(x + 9,  y + 6, 7, 12);
+
+            // Tail (swishing)
+            const swish = Math.sin(gameState.playerAnimFrame * 0.18) * 14;
+            ctx.strokeStyle = '#888888';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x - 18, y);
+            ctx.quadraticCurveTo(x - 38, y - 10 + swish, x - 44, y - 28 + swish);
+            ctx.stroke();
+            // tail tip curl
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x - 44, y - 30 + swish, 5, 0, Math.PI * 1.5);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ---- BATTLE MODE ----
+        function enterBattle(enemy = 'dog') {
+            gameState.inBattle = true;
+            gameState.activeBattleEnemy = enemy;
+            gameState.dogHealth = gameState.dogMaxHealth;
+            gameState.playerBattleHealth = gameState.playerMaxBattleHealth;
+            gameState.battleTurn = 'player';
+            gameState.battleAnimating = false;
+            gameState.battleProjectile = null;
+            gameState.battleWaiting = false;
+            gameState.currentBattleFact = null;
+            gameState.battleDogFactDeck = shuffleArray(dogBattleFacts);
+            gameState.battleKittyFactDeck = shuffleArray(kittyBattleFacts);
+
+            // Pause all movement
+            Object.keys(keyPressed).forEach(k => keyPressed[k] = false);
+        }
+
+        function exitBattle() {
+            gameState.inBattle = false;
+            gameState.dogSpawned = false;
+            gameState.kittySpawned = false;
+            gameState.battleProjectile = null;
+            gameState.currentBattleFact = null;
+            gameState.battleWaiting = false;
+        }
+
+        function drawBattleMode() {
+            const W = canvas.width;
+            const H = canvas.height;
+            const midY = H / 2;
+
+            // Starfield background
+            ctx.fillStyle = '#000011';
+            ctx.fillRect(0, 0, W, H);
+            drawStarfield();
+
+            // Dividing line
+            ctx.strokeStyle = '#333366';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 6]);
+            ctx.beginPath();
+            ctx.moveTo(W / 2, 0);
+            ctx.lineTo(W / 2, H);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Health bars - enemy left, player right
+            const enemyLabel = gameState.activeBattleEnemy === 'kitty' ? 'SPACE KITTY' : 'SPACE DOG';
+            drawBattleHealthBar(20, 10, 160, 16, gameState.dogHealth, gameState.dogMaxHealth, '#cc3300', enemyLabel);
+            drawBattleHealthBar(W - 180, 10, 160, 16, gameState.playerBattleHealth, gameState.playerMaxBattleHealth, '#00cc00', 'YOU');
+
+            // Draw enemy sprite (left quarter)
+            if (gameState.activeBattleEnemy === 'kitty') {
+                drawSpaceKitty(W / 4, midY, 1);
+            } else {
+                drawSpaceDog(W / 4, midY, 1);
+            }
+
+            // Draw player (right quarter)
+            const px = W * 3 / 4;
+            const py = midY - 15;
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(px - 10, py, 20, 30);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(px - 6, py + 6, 4, 4);
+            ctx.fillRect(px + 2, py + 6, 4, 4);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(px - 5, py + 7, 2, 2);
+            ctx.fillRect(px + 3, py + 7, 2, 2);
+            ctx.fillRect(px - 5, py + 15, 10, 2);
+            ctx.fillStyle = '#0066cc';
+            ctx.fillRect(px - 5, py + 28, 3, 4);
+            ctx.fillRect(px + 2, py + 28, 3, 4);
+
+            // Projectile animation - text scrolls from right side through the dog
+            if (gameState.battleProjectile) {
+                const p = gameState.battleProjectile;
+                p.x += p.velX;
+
+                // Draw as a single scrolling line of text
+                ctx.save();
+                ctx.fillStyle = p.color;
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(p.text, p.x, p.y);
+                ctx.restore();
+
+                // Deal damage when the leading edge of the text reaches the dog
+                if (!p.damageDone && p.x <= W / 4) {
+                    p.damageDone = true;
+                    gameState.dogHealth = Math.max(0, gameState.dogHealth - 1);
+                    if (gameState.dogHealth <= 0) {
+                        gameState.battleProjectile = null;
+                        gameState.battleAnimating = false;
+                        setTimeout(() => {
+                            showFeedback('Space Dog defeated! Back to exploring!', true);
+                            exitBattle();
+                        }, 600);
+                        return;
+                    }
+                    // Enemy's turn after a short delay
+                    setTimeout(() => {
+                        if (gameState.activeBattleEnemy === 'kitty') {
+                            if (gameState.battleKittyFactDeck.length === 0) {
+                                gameState.battleKittyFactDeck = shuffleArray(kittyBattleFacts);
+                            }
+                            gameState.currentBattleFact = gameState.battleKittyFactDeck.pop();
+                        } else {
+                            if (gameState.battleDogFactDeck.length === 0) {
+                                gameState.battleDogFactDeck = shuffleArray(dogBattleFacts);
+                            }
+                            gameState.currentBattleFact = gameState.battleDogFactDeck.pop();
+                        }
+                        gameState.battleTurn = 'dog';
+                        gameState.battleAnimating = false;
+                        gameState.battleWaiting = true;
+                    }, 400);
+                }
+
+                // Remove projectile once the full text has scrolled off the left edge
+                if (p.x + p.textWidth <= 0) {
+                    gameState.battleProjectile = null;
+                }
+            }
+
+            // Battle UI
+            ctx.textAlign = 'center';
+            if (gameState.battleTurn === 'player' && !gameState.battleAnimating) {
+                ctx.fillStyle = '#ffff00';
+                ctx.font = 'bold 13px Arial';
+                ctx.fillText('YOUR TURN - Press SPACE to fire a fact!', W / 2, H - 30);
+            } else if (gameState.battleTurn === 'dog' && gameState.battleWaiting && gameState.currentBattleFact) {
+                // Draw dog's attack fact
+                ctx.fillStyle = '#ff8800';
+                ctx.font = 'bold 11px Arial';
+                ctx.fillText('SPACE DOG FIRES A FACT!', W / 2, H - 90);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '11px Arial';
+                const words = gameState.currentBattleFact.statement.split(' ');
+                let line = '', lineY = H - 72;
+                words.forEach((word, i) => {
+                    const test = line + word + ' ';
+                    if (ctx.measureText(test).width > W - 60 && i > 0) {
+                        ctx.fillText(line, W / 2, lineY);
+                        line = word + ' ';
+                        lineY += 14;
+                    } else { line = test; }
+                });
+                ctx.fillText(line, W / 2, lineY);
+
+                ctx.fillStyle = '#00ff88';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('TRUE or FALSE?  Press T or F', W / 2, H - 12);
+            } else if (gameState.battleAnimating) {
+                ctx.fillStyle = '#aaaaaa';
+                ctx.font = '11px Arial';
+                ctx.fillText('...', W / 2, H - 30);
+            }
+        }
+
+        function drawBattleHealthBar(x, y, w, h, current, max, color, label) {
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(x, y, w, h);
+            const fill = (current / max) * w;
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, fill, h);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${label}: ${current}/${max}`, x, y - 2);
+        }
+
+        function playerBattleAttack() {
+            if (!gameState.inBattle || gameState.battleTurn !== 'player' || gameState.battleAnimating) return;
+            gameState.battleAnimating = true;
+
+            const factText = gameState.activeFact ? gameState.activeFact.fact : 'A Big Bang fact!';
+            ctx.font = 'bold 11px Arial';
+            const textWidth = ctx.measureText(factText).width;
+            gameState.battleProjectile = {
+                x: canvas.width + 10,  // start fully off-screen right
+                y: canvas.height / 2,
+                velX: -1.5,            // slow leftward scroll
+                text: factText,
+                color: '#00ffff',
+                textWidth: textWidth,
+                damageDone: false
+            };
+            gameState.battleTurn = 'waiting';
+        }
+
+        function resolveDogAttack(playerAnsweredTrue) {
+            if (!gameState.inBattle || !gameState.battleWaiting || !gameState.currentBattleFact) return;
+            const correct = playerAnsweredTrue === gameState.currentBattleFact.isTrue;
+            gameState.battleWaiting = false;
+
+            if (!correct) {
+                gameState.playerBattleHealth = Math.max(0, gameState.playerBattleHealth - 1);
+                showFeedback(`Wrong! It was ${gameState.currentBattleFact.isTrue ? 'TRUE' : 'FALSE'}`, false);
+
+                if (gameState.playerBattleHealth <= 0) {
+                    setTimeout(() => {
+                        gameState.lives = Math.max(0, gameState.lives - 1);
+                        if (gameState.lives <= 0) {
+                            showFeedback('Game Over! Return to menu.', false);
+                            setTimeout(() => location.reload(), 2500);
+                        } else {
+                            showFeedback('The Space Dog won this round! Back to exploring...', false);
+                            exitBattle();
+                        }
+                    }, 1500);
+                    return;
+                }
+            } else {
+                showFeedback('Correct!', true);
+            }
+
+            // Animate dog's fact flying at player (cosmetic)
+            setTimeout(() => {
+                gameState.battleTurn = 'player';
+                gameState.currentBattleFact = null;
+            }, 1200);
+        }
+
+        // ---- SPIRAL GALAXY SPRITE ----
+        function drawSpiralGalaxy(screenX, screenY, size, rotation, color, glowing, pulse) {
+            ctx.save();
+            ctx.translate(screenX, screenY);
+
+            // Glowing ring for question galaxies
+            if (glowing) {
+                ctx.strokeStyle = '#ffdd00';
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.4 + Math.sin(pulse) * 0.3;
+                ctx.beginPath();
+                ctx.arc(0, 0, size + 14, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.rotate(rotation);
+
+            // Flattened disk (perspective tilt)
+            ctx.save();
+            ctx.scale(1, 0.38);
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Two spiral arms
+            for (let arm = 0; arm < 2; arm++) {
+                const offset = arm * Math.PI;
+                ctx.beginPath();
+                for (let i = 0; i <= 44; i++) {
+                    const t = i / 44;
+                    const angle = offset + t * Math.PI * 2.8;
+                    const r = t * size * 0.92;
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r * 0.38;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(1.5, size * 0.1);
+                ctx.globalAlpha = 0.6;
+                ctx.stroke();
+            }
+
+            // Inner core glow
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bright nucleus
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, Math.max(2, size * 0.09), 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ---- GALAXY LEVEL CONTENT ----
+        function drawGalaxyContent() {
+            drawStarfield();
+            if (!gameState.galaxyData) return;
+
+            const galaxies = gameState.galaxyData;
+            const pulse = gameState.playerAnimFrame * 0.06;
+
+            // Compute distances from player to each galaxy for vector scaling
+            const distances = galaxies.map(g => {
+                const dx = g.x - gameState.playerX;
+                const dy = g.y - gameState.playerY;
+                return Math.sqrt(dx * dx + dy * dy);
+            });
+            const maxDist = Math.max(...distances, 1);
+
+            galaxies.forEach((galaxy, idx) => {
+                const sx = galaxy.x - gameState.cameraX;
+                const sy = galaxy.y - gameState.cameraY;
+                const pad = galaxy.size + 120;
+                const onScreen = sx > -pad && sx < canvas.width + pad &&
+                                 sy > -pad && sy < canvas.height + pad;
+
+                if (onScreen) {
+                    const glowing = galaxy.isQuestion && !galaxy.triggered;
+                    drawSpiralGalaxy(sx, sy, galaxy.size, galaxy.rotation, galaxy.color, glowing, pulse);
+
+                    // Recession vector — points directly away from player, length proportional to distance
+                    const dist = distances[idx];
+                    const vectorLen = Math.pow(dist / maxDist, 0.5) * 140;
+                    if (vectorLen > 3) {
+                        const dx = galaxy.x - gameState.playerX;
+                        const dy = galaxy.y - gameState.playerY;
+                        const mag = Math.sqrt(dx * dx + dy * dy);
+                        const ux = dx / mag;
+                        const uy = dy / mag;
+
+                        const startX = sx + ux * (galaxy.size * 0.5 + 6);
+                        const startY = sy + uy * (galaxy.size * 0.38 * 0.5 + 6);
+                        const endX = startX + ux * vectorLen;
+                        const endY = startY + uy * vectorLen;
+
+                        ctx.save();
+                        ctx.strokeStyle = '#ff2200';
+                        ctx.fillStyle = '#ff2200';
+                        ctx.lineWidth = 2;
+                        ctx.globalAlpha = 0.9;
+
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(endX, endY);
+                        ctx.stroke();
+
+                        // Arrowhead
+                        const headLen = 7;
+                        const ang = Math.atan2(uy, ux);
+                        ctx.beginPath();
+                        ctx.moveTo(endX, endY);
+                        ctx.lineTo(endX - headLen * Math.cos(ang - 0.4), endY - headLen * Math.sin(ang - 0.4));
+                        ctx.lineTo(endX - headLen * Math.cos(ang + 0.4), endY - headLen * Math.sin(ang + 0.4));
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.restore();
+                    }
+                } else if (galaxy.isQuestion && !galaxy.triggered) {
+                    drawDirectionalArrow(galaxy.x, galaxy.y, '#ffdd00');
+                }
+            });
+
+            // HUD
+            const answered = galaxies.filter(g => g.isQuestion && g.triggered).length;
+            const total = galaxies.filter(g => g.isQuestion).length;
+            ctx.fillStyle = '#ffff99';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Galaxy Questions: ${answered} / ${total}`, 10, 30);
+
+            // Draw space kitty if spawned
+            if (gameState.kittySpawned && !gameState.inBattle) {
+                const ksx = gameState.kittyX - gameState.cameraX;
+                const ksy = gameState.kittyY - gameState.cameraY;
+                const kittyOnScreen = ksx > -80 && ksx < canvas.width + 80 &&
+                                      ksy > -80 && ksy < canvas.height + 80;
+                if (kittyOnScreen) {
+                    drawSpaceKitty(ksx, ksy, 1);
+                } else {
+                    drawDirectionalArrow(gameState.kittyX, gameState.kittyY, '#ff88ff');
+                }
+            }
+        }
+
+        // ---- START GALAXY PHASE ----
+        function startGalaxyPhase() {
+            gameState.inGalaxyMode = true;
+            gameState.playerX = 0;
+            gameState.playerY = 0;
+            gameState.cameraX = -canvas.width / 2;
+            gameState.cameraY = -canvas.height / 2;
+            gameState.lastMovementAngle = 0;
+            gameState.questionsAnswered = 0;
+            gameState.questionsCorrect = 0;
+            currentQuestionIndex = 0;
+
+            const rng = s => Math.abs(Math.sin(s * 9301 + 49297) * 233280) % 1;
+            const colors = ['#aaccff', '#ffeeaa', '#ddaaff', '#aaffcc', '#ccddff'];
+            const levelQs = levels[4].questions;
+            const galaxies = [];
+
+            // Question galaxies — spaced out so they require exploration to find
+            levelQs.forEach((_, i) => {
+                const angle = (i / levelQs.length) * Math.PI * 2 + 0.8;
+                const dist = 450 + i * 350;
+                galaxies.push({
+                    x: Math.cos(angle) * dist,
+                    y: Math.sin(angle) * dist,
+                    size: 28 + rng(i * 17) * 10,
+                    rotation: rng(i * 5) * Math.PI * 2,
+                    color: '#ffdd88',
+                    isQuestion: true,
+                    questionIndex: i,
+                    triggered: false
+                });
+            });
+
+            // Decorative galaxies scattered across the world
+            for (let i = 0; i < 45; i++) {
+                const s = i + 50;
+                galaxies.push({
+                    x: (rng(s) - 0.5) * 2500,
+                    y: (rng(s + 1) - 0.5) * 2500,
+                    size: 12 + rng(s + 2) * 18,
+                    rotation: rng(s + 3) * Math.PI * 2,
+                    color: colors[Math.floor(rng(s + 4) * colors.length)],
+                    isQuestion: false,
+                    questionIndex: -1,
+                    triggered: false
+                });
+            }
+
+            gameState.galaxyData = galaxies;
+            Object.keys(keyPressed).forEach(k => keyPressed[k] = false);
+        }
+
+        // ---- REDSHIFT LEVEL (LEVEL 3) ----
+        const REDSHIFT_TRIGGER_DIST = 20;
+        const REDSHIFT_SCAN_DIST = 300;
+        const ABSORPTION_LINES = [
+            { nm: 393, label: 'Ca K', restFrac: 0.12 },
+            { nm: 486, label: 'Hβ',   restFrac: 0.37 },
+            { nm: 589, label: 'Na D', restFrac: 0.60 },
+            { nm: 656, label: 'Hα',   restFrac: 0.78 }
+        ];
+        const GALAXY_NAMES = [
+            'NGC 4889','M87','NGC 1277','3C 273','NGC 4594',
+            'M81','NGC 3115','M104','NGC 4374','NGC 4552',
+            'M51','NGC 1300','M101','NGC 7331','NGC 5128'
+        ];
+
+        function startRedshiftPhase() {
+            gameState.inRedshiftMode = true;
+            gameState.playerX = 0;
+            gameState.playerY = 0;
+            gameState.cameraX = -canvas.width / 2;
+            gameState.cameraY = -canvas.height / 2;
+            gameState.lastMovementAngle = 0;
+            gameState.questionsAnswered = 0;
+            gameState.questionsCorrect = 0;
+            currentQuestionIndex = 0;
+
+            const rng = s => Math.abs(Math.sin(s * 9301 + 49297) * 233280) % 1;
+            const colors = ['#aaccff', '#ffeeaa', '#ddaaff', '#aaffcc', '#ccddff'];
+            const levelQs = levels[3].questions;
+            const galaxies = [];
+
+            // Compute max decorative distance for z scaling
+            const decorSpread = 2000;
+
+            // Question galaxies
+            levelQs.forEach((_, i) => {
+                const angle = (i / levelQs.length) * Math.PI * 2 + 0.8;
+                const dist = 400 + i * 300;
+                const z = Math.min(0.12, dist / 3000);
+                galaxies.push({
+                    x: Math.cos(angle) * dist,
+                    y: Math.sin(angle) * dist,
+                    size: 26 + rng(i * 17) * 10,
+                    rotation: rng(i * 5) * Math.PI * 2,
+                    color: '#ffdd88',
+                    isQuestion: true,
+                    questionIndex: i,
+                    triggered: false,
+                    z,
+                    name: GALAXY_NAMES[i % GALAXY_NAMES.length]
+                });
+            });
+
+            // Decorative galaxies
+            for (let i = 0; i < 35; i++) {
+                const s = i + 50;
+                const wx = (rng(s) - 0.5) * decorSpread * 2;
+                const wy = (rng(s + 1) - 0.5) * decorSpread * 2;
+                const dist = Math.sqrt(wx * wx + wy * wy);
+                const z = Math.min(0.12, dist / (decorSpread * 2));
+                galaxies.push({
+                    x: wx,
+                    y: wy,
+                    size: 10 + rng(s + 2) * 16,
+                    rotation: rng(s + 3) * Math.PI * 2,
+                    color: colors[Math.floor(rng(s + 4) * colors.length)],
+                    isQuestion: false,
+                    questionIndex: -1,
+                    triggered: false,
+                    z,
+                    name: GALAXY_NAMES[(i + 5) % GALAXY_NAMES.length]
+                });
+            }
+
+            gameState.redshiftData = { galaxies, lockedGalaxy: null, spectrumAnim: 0 };
+            Object.keys(keyPressed).forEach(k => keyPressed[k] = false);
+        }
+
+        function drawRedshiftContent() {
+            const W = canvas.width;
+            const H = canvas.height;
+            const playH = Math.floor(H * 0.62);   // top: play area
+            const specY = playH;                   // bottom: spectrum panel
+            const specH = H - playH;
+
+            const { galaxies, lockedGalaxy, spectrumAnim } = gameState.redshiftData;
+            const pulse = gameState.playerAnimFrame * 0.06;
+
+            // ── PLAY AREA ─────────────────────────────────────────────────
+            // Clip draw to play area
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, W, playH);
+            ctx.clip();
+
+            drawStarfield();
+
+            // Compute distances from player to each galaxy
+            const distances = galaxies.map(g => {
+                const dx = g.x - gameState.playerX;
+                const dy = g.y - gameState.playerY;
+                return Math.sqrt(dx * dx + dy * dy);
+            });
+            const maxDist = Math.max(...distances, 1);
+
+            galaxies.forEach((galaxy, idx) => {
+                const sx = galaxy.x - gameState.cameraX;
+                const sy = galaxy.y - gameState.cameraY;
+                const pad = galaxy.size + 120;
+                if (sx < -pad || sx > W + pad || sy < -pad || sy > playH + pad) {
+                    // Off-screen — draw directional arrow for question galaxies only
+                    if (galaxy.isQuestion && !galaxy.triggered) {
+                        drawDirectionalArrow(galaxy.x, galaxy.y, '#ffdd00');
+                    }
+                    return;
+                }
+
+                const glowing = galaxy.isQuestion && !galaxy.triggered;
+                drawSpiralGalaxy(sx, sy, galaxy.size, galaxy.rotation, galaxy.color, glowing, pulse);
+
+            });
+
+            // HUD
+            const answered = galaxies.filter(g => g.isQuestion && g.triggered).length;
+            const total = galaxies.filter(g => g.isQuestion).length;
+            ctx.fillStyle = '#ffff99';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Redshift Stations: ${answered} / ${total}`, 10, 22);
+            ctx.fillStyle = '#aaddff';
+            ctx.font = '9px Arial';
+            ctx.fillText('Find glowing galaxies — watch the spectrum below shift red!', 10, 36);
+
+            ctx.restore(); // end clip
+
+            // Divider
+            ctx.fillStyle = '#1a1a2a';
+            ctx.fillRect(0, playH, W, 4);
+
+            // ── SPECTRUM PANEL ────────────────────────────────────────────
+            ctx.fillStyle = '#06000e';
+            ctx.fillRect(0, specY + 4, W, specH - 4);
+
+            // Find galaxy to display in spectrum
+            let displayGalaxy = lockedGalaxy;
+            if (!displayGalaxy) {
+                // Find nearest within REDSHIFT_SCAN_DIST
+                let nearestDist = Infinity;
+                galaxies.forEach((g, i) => {
+                    if (distances[i] < REDSHIFT_SCAN_DIST && distances[i] < nearestDist) {
+                        nearestDist = distances[i];
+                        displayGalaxy = g;
+                    }
+                });
+            }
+
+            const stripW = Math.min(W - 120, 560);
+            const stripX = Math.floor((W - stripW) / 2);
+            const stripY = specY + 28;
+            const stripH = 30;
+
+            // Title
+            ctx.fillStyle = '#88ccff';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('SPECTROGRAPH — GALAXY LIGHT ANALYSIS', W / 2, specY + 14);
+            ctx.textAlign = 'left';
+
+            // Rainbow strip
+            const grad = ctx.createLinearGradient(stripX, 0, stripX + stripW, 0);
+            grad.addColorStop(0,    '#7b00ff'); // violet
+            grad.addColorStop(0.15, '#4400ff'); // blue-violet
+            grad.addColorStop(0.30, '#0088ff'); // blue
+            grad.addColorStop(0.48, '#00cc44'); // green
+            grad.addColorStop(0.62, '#eeee00'); // yellow
+            grad.addColorStop(0.78, '#ff6600'); // orange
+            grad.addColorStop(1.0,  '#cc0000'); // red
+            ctx.fillStyle = grad;
+            ctx.fillRect(stripX, stripY, stripW, stripH);
+            ctx.strokeStyle = '#334';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(stripX, stripY, stripW, stripH);
+
+            // Compute z for display
+            const displayZ = displayGalaxy ? (lockedGalaxy ? displayGalaxy.z * Math.min(1, spectrumAnim * 1.4) : displayGalaxy.z) : 0;
+            const shiftPixels = displayZ * stripW * 2.2; // max shift across the strip
+
+            // Draw absorption lines
+            ABSORPTION_LINES.forEach(line => {
+                const restX = stripX + line.restFrac * stripW;
+                const shiftedX = restX + shiftPixels;
+
+                // Rest position (gray dashed)
+                ctx.strokeStyle = 'rgba(180,180,200,0.35)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 3]);
+                ctx.beginPath();
+                ctx.moveTo(restX, stripY - 4);
+                ctx.lineTo(restX, stripY + stripH + 4);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Shifted line (dark, thick)
+                if (shiftedX <= stripX + stripW + 2) {
+                    ctx.strokeStyle = 'rgba(0,0,0,0.92)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(shiftedX, stripY);
+                    ctx.lineTo(shiftedX, stripY + stripH);
+                    ctx.stroke();
+
+                    // Label
+                    ctx.fillStyle = displayZ > 0.005 ? '#ff9966' : '#aaaaaa';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(line.label, shiftedX, stripY + stripH + 10);
+                }
+            });
+            ctx.textAlign = 'left';
+
+            // Wavelength axis labels
+            ctx.fillStyle = '#445566';
+            ctx.font = '7px Arial';
+            ctx.fillText('400 nm', stripX, stripY + stripH + 22);
+            ctx.textAlign = 'right';
+            ctx.fillText('700 nm', stripX + stripW, stripY + stripH + 22);
+            ctx.textAlign = 'left';
+
+            // z and galaxy info
+            if (displayGalaxy) {
+                ctx.fillStyle = '#ffff44';
+                ctx.font = 'bold 11px Arial';
+                ctx.fillText(`z = ${displayZ.toFixed(4)}`, stripX, specY + 14);
+                ctx.fillStyle = '#aaddff';
+                ctx.font = '9px Arial';
+                ctx.fillText(displayGalaxy.name, stripX + stripW - 50, specY + 14);
+
+                const speedFrac = displayZ / 0.12;
+                const barW = Math.floor(speedFrac * 120);
+                ctx.fillStyle = '#220000';
+                ctx.fillRect(W - 140, stripY + 4, 120, 10);
+                ctx.fillStyle = `rgb(${Math.floor(80 + 175 * speedFrac)},${Math.floor(60 * (1 - speedFrac))},0)`;
+                ctx.fillRect(W - 140, stripY + 4, barW, 10);
+                ctx.strokeStyle = '#554';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(W - 140, stripY + 4, 120, 10);
+                ctx.fillStyle = '#aaa';
+                ctx.font = '7px Arial';
+                ctx.fillText('recession →', W - 140, stripY + 22);
+            } else {
+                ctx.fillStyle = '#445566';
+                ctx.font = 'bold 10px Arial';
+                ctx.fillText('No signal — approach a galaxy', stripX, specY + 14);
+            }
+
+            // Legend
+            ctx.fillStyle = 'rgba(180,180,200,0.35)';
+            ctx.fillRect(W - 28, stripY + 34, 10, 14);
+            ctx.fillStyle = '#666';
+            ctx.font = '7px Arial';
+            ctx.fillText('rest pos.', W - 18, stripY + 44);
+        }
+
+        function drawLevelContent() {
+            // Draw extended platform
+            ctx.fillStyle = '#8b4513';
+            const platformY = canvas.height * 0.75;
+            const platformHeight = 40;
+
+            // Draw platform sections (extended beyond camera view)
+            const startX = Math.max(0, gameState.cameraX - 200);
+            const endX = gameState.cameraX + canvas.width + 200;
+            ctx.fillRect(startX - gameState.cameraX, platformY, endX - startX, platformHeight);
+
+            // Draw trees along the level
+            const treeSpacing = 400;
+            for (let i = 0; i < LEVEL_WIDTH; i += treeSpacing) {
+                const screenX = i - gameState.cameraX;
+                drawTree(i, screenX, 60);
+            }
+
+            // Draw some additional trees for variety
+            for (let i = 200; i < LEVEL_WIDTH; i += treeSpacing * 1.5) {
+                const screenX = i - gameState.cameraX;
+                drawTree(i, screenX, 50);
+            }
+
+            // Draw enemies for each question
+            flags.forEach((enemy, index) => {
+                // Only draw if not answered yet, or if currently falling/fading
+                if (!enemy.answered || enemy.isFalling || enemy.opacity > 0) {
+                    const screenX = enemy.x - gameState.cameraX;
+                    const screenY = enemy.y;
+                    drawEnemy(screenX, screenY, enemy.answered, index, enemy.isFalling, enemy.rotation, enemy.opacity);
+                }
+            });
+
+            // Draw distance markers
+            ctx.fillStyle = '#666666';
+            ctx.font = '9px Arial';
+            for (let i = 0; i < LEVEL_WIDTH; i += 500) {
+                const screenX = i - gameState.cameraX;
+                if (screenX > 0 && screenX < canvas.width) {
+                    ctx.fillRect(screenX, canvas.height * 0.73, 1, 2);
+                }
+            }
+
+            // Draw decorative elements based on level
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 14px Arial';
+
+            const levelMessages = {
+                1: "DEFINITIONS",
+                2: "FACTS",
+                3: "REDSHIFT",
+                4: "GALAXY MOVEMENT"
+            };
+
+            ctx.fillText(levelMessages[gameState.currentLevel], canvas.width / 2 - 80, 30);
+
+            // Draw world position indicator
+            ctx.fillStyle = '#000000';
+            ctx.font = '10px Arial';
+            ctx.fillText(`Distance: ${Math.round(gameState.playerX / 10)}`, canvas.width - 120, 20);
+
+            // Progress indicator
+            const progressWidth = (gameState.levelProgress / 100) * (canvas.width - 40);
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(20, 50, progressWidth, 15);
+            ctx.strokeStyle = '#000000';
+            ctx.strokeRect(20, 50, canvas.width - 40, 15);
+        }
+
+
+        function updateGame() {
+            // Update animation frame always
+            gameState.playerAnimFrame++;
+
+            // Battle mode - only draw, no movement
+            if (gameState.inBattle) {
+                resizeCanvas();
+                drawGame();
+                return;
+            }
+
+            // Update player position based on input
+            gameState.playerVelX = 0;
+            gameState.playerVelY = 0;
+
+            if (gameState.inExploration) {
+                // In exploration mode, allow free movement in all directions
+                if (keyPressed['w'] || keyPressed['arrowup']) {
+                    gameState.playerVelY = -PLAYER_SPEED;
+                }
+                if (keyPressed['s'] || keyPressed['arrowdown']) {
+                    gameState.playerVelY = PLAYER_SPEED;
+                }
+                if (keyPressed['a'] || keyPressed['arrowleft']) {
+                    gameState.playerVelX = -PLAYER_SPEED;
+                    gameState.playerDirection = -1;
+                }
+                if (keyPressed['d'] || keyPressed['arrowright']) {
+                    gameState.playerVelX = PLAYER_SPEED;
+                    gameState.playerDirection = 1;
+                }
+
+                // Track movement direction for spawning papers
+                if (gameState.playerVelX !== 0 || gameState.playerVelY !== 0) {
+                    gameState.lastMovementAngle = Math.atan2(gameState.playerVelY, gameState.playerVelX);
+                }
+
+                // Apply velocity
+                gameState.playerX += gameState.playerVelX;
+                gameState.playerY += gameState.playerVelY;
+
+                // Unlimited movement in exploration mode
+
+                // Update camera to follow player and keep them centered (unlimited movement)
+                gameState.cameraX = gameState.playerX - canvas.width / 2;
+                gameState.cameraY = gameState.playerY - canvas.height / 2;
+
+                // Check if player found the paper
+                if (!gameState.paperFound) {
+                    const paperDist = Math.sqrt(
+                        Math.pow(gameState.playerX - gameState.factPaperX, 2) +
+                        Math.pow(gameState.playerY - gameState.factPaperY, 2)
+                    );
+                    if (paperDist < 50) {
+                        gameState.paperFound = true;
+                        showFactModal();
+                    }
+                }
+
+                // Check if player found the fact dude
+                if (gameState.paperFound && !gameState.factDudeFound) {
+                    const dudeDist = Math.sqrt(
+                        Math.pow(gameState.playerX - gameState.factDudeX, 2) +
+                        Math.pow(gameState.playerY - gameState.factDudeY, 2)
+                    );
+                    if (dudeDist < 50) {
+                        gameState.factDudeFound = true;
+                        showFactQuestion();
+                    }
+                }
+
+                // Randomly spawn space dog if not yet spawned
+                if (!gameState.dogSpawned) {
+                    const distFromStart = Math.sqrt(gameState.playerX * gameState.playerX + gameState.playerY * gameState.playerY);
+                    if (distFromStart > 400 && Math.random() < 0.002) {
+                        const dogAngle = Math.random() * Math.PI * 2;
+                        gameState.dogX = gameState.playerX + Math.cos(dogAngle) * (300 + Math.random() * 200);
+                        gameState.dogY = gameState.playerY + Math.sin(dogAngle) * (300 + Math.random() * 200);
+                        gameState.dogSpawned = true;
+                    }
+                }
+
+                // Move dog toward player and check encounter
+                if (gameState.dogSpawned && !gameState.inBattle && !factModalOpen) {
+                    const dogDx = gameState.playerX - gameState.dogX;
+                    const dogDy = gameState.playerY - gameState.dogY;
+                    const dogDist = Math.sqrt(dogDx * dogDx + dogDy * dogDy);
+                    if (dogDist < 60) {
+                        enterBattle();
+                    } else {
+                        const dogSpeed = 1.2;
+                        gameState.dogX += (dogDx / dogDist) * dogSpeed;
+                        gameState.dogY += (dogDy / dogDist) * dogSpeed;
+                    }
+                }
+            } else if (gameState.inGalaxyMode) {
+                // Galaxy mode — same free movement as exploration
+                if (keyPressed['w'] || keyPressed['arrowup']) gameState.playerVelY = -PLAYER_SPEED;
+                if (keyPressed['s'] || keyPressed['arrowdown']) gameState.playerVelY = PLAYER_SPEED;
+                if (keyPressed['a'] || keyPressed['arrowleft']) { gameState.playerVelX = -PLAYER_SPEED; gameState.playerDirection = -1; }
+                if (keyPressed['d'] || keyPressed['arrowright']) { gameState.playerVelX = PLAYER_SPEED; gameState.playerDirection = 1; }
+
+                if (gameState.playerVelX !== 0 || gameState.playerVelY !== 0) {
+                    gameState.lastMovementAngle = Math.atan2(gameState.playerVelY, gameState.playerVelX);
+                }
+
+                gameState.playerX += gameState.playerVelX;
+                gameState.playerY += gameState.playerVelY;
+                gameState.cameraX = gameState.playerX - canvas.width / 2;
+                gameState.cameraY = gameState.playerY - canvas.height / 2;
+
+                // Check proximity to question galaxies
+                if (gameState.galaxyData && !questionModalOpen) {
+                    gameState.galaxyData.forEach(galaxy => {
+                        if (galaxy.isQuestion && !galaxy.triggered) {
+                            const dx = gameState.playerX - galaxy.x;
+                            const dy = gameState.playerY - galaxy.y;
+                            if (Math.sqrt(dx * dx + dy * dy) < 20) {
+                                galaxy.triggered = true;
+                                currentQuestionIndex = galaxy.questionIndex;
+                                showQuestion();
+                            }
+                        }
+                    });
+                }
+
+                // Randomly spawn space kitty
+                if (!gameState.kittySpawned) {
+                    const distFromStart = Math.sqrt(gameState.playerX * gameState.playerX + gameState.playerY * gameState.playerY);
+                    if (distFromStart > 400 && Math.random() < 0.002) {
+                        const kittyAngle = Math.random() * Math.PI * 2;
+                        gameState.kittyX = gameState.playerX + Math.cos(kittyAngle) * (300 + Math.random() * 200);
+                        gameState.kittyY = gameState.playerY + Math.sin(kittyAngle) * (300 + Math.random() * 200);
+                        gameState.kittySpawned = true;
+                    }
+                }
+
+                // Move kitty toward player and check encounter
+                if (gameState.kittySpawned && !gameState.inBattle) {
+                    const kDx = gameState.playerX - gameState.kittyX;
+                    const kDy = gameState.playerY - gameState.kittyY;
+                    const kDist = Math.sqrt(kDx * kDx + kDy * kDy);
+                    if (kDist < 60) {
+                        enterBattle('kitty');
+                    } else {
+                        const kittySpeed = 1.4;
+                        gameState.kittyX += (kDx / kDist) * kittySpeed;
+                        gameState.kittyY += (kDy / kDist) * kittySpeed;
+                    }
+                }
+            } else if (gameState.inRedshiftMode) {
+                // Redshift mode — free movement, spectrum panel below
+                if (keyPressed['w'] || keyPressed['arrowup']) gameState.playerVelY = -PLAYER_SPEED;
+                if (keyPressed['s'] || keyPressed['arrowdown']) gameState.playerVelY = PLAYER_SPEED;
+                if (keyPressed['a'] || keyPressed['arrowleft']) { gameState.playerVelX = -PLAYER_SPEED; gameState.playerDirection = -1; }
+                if (keyPressed['d'] || keyPressed['arrowright']) { gameState.playerVelX = PLAYER_SPEED; gameState.playerDirection = 1; }
+
+                if (gameState.playerVelX !== 0 || gameState.playerVelY !== 0) {
+                    gameState.lastMovementAngle = Math.atan2(gameState.playerVelY, gameState.playerVelX);
+                }
+
+                gameState.playerX += gameState.playerVelX;
+                gameState.playerY += gameState.playerVelY;
+                gameState.cameraX = gameState.playerX - canvas.width / 2;
+                gameState.cameraY = gameState.playerY - canvas.height / 2;
+
+                // Check proximity to question galaxies
+                if (gameState.redshiftData && !questionModalOpen) {
+                    gameState.redshiftData.galaxies.forEach(galaxy => {
+                        if (galaxy.isQuestion && !galaxy.triggered) {
+                            const dx = gameState.playerX - galaxy.x;
+                            const dy = gameState.playerY - galaxy.y;
+                            if (Math.sqrt(dx * dx + dy * dy) < REDSHIFT_TRIGGER_DIST) {
+                                galaxy.triggered = true;
+                                gameState.redshiftData.lockedGalaxy = galaxy;
+                                gameState.redshiftData.spectrumAnim = 0;
+                                currentQuestionIndex = galaxy.questionIndex;
+                                setTimeout(() => showQuestion(), 1500);
+                            }
+                        }
+                    });
+                    // Animate spectrumAnim toward 1
+                    if (gameState.redshiftData.lockedGalaxy && gameState.redshiftData.spectrumAnim < 1) {
+                        gameState.redshiftData.spectrumAnim = Math.min(1, gameState.redshiftData.spectrumAnim + 0.012);
+                    }
+                }
+            } else {
+                // Normal level mode - horizontal movement only
+                if (keyPressed['a'] || keyPressed['arrowleft']) {
+                    gameState.playerVelX = -PLAYER_SPEED;
+                    gameState.playerDirection = -1;
+                }
+                if (keyPressed['d'] || keyPressed['arrowright']) {
+                    gameState.playerVelX = PLAYER_SPEED;
+                    gameState.playerDirection = 1;
+                }
+
+                // Apply velocity
+                gameState.playerX += gameState.playerVelX;
+
+                // Clamp player position to level bounds
+                gameState.playerX = Math.max(0, Math.min(gameState.playerX, LEVEL_WIDTH - PLAYER_WIDTH));
+
+                // Update player Y position (on platform)
+                gameState.playerY = canvas.height * 0.65;
+                // Keep flag Y in sync so resizing doesn't strand dudes in the air
+                flags.forEach(f => { if (!f.isFalling && !f.hasHit) f.y = gameState.playerY; });
+                // Update camera to follow player (keep player roughly centered) - normal mode only
+                const targetCameraX = gameState.playerX - SCREEN_WIDTH_UNITS / 3;
+                gameState.cameraX = Math.max(0, Math.min(targetCameraX, LEVEL_WIDTH - SCREEN_WIDTH_UNITS));
+            }
+
+
+
+            // Update falling enemies (normal gameplay only)
+            if (!gameState.inExploration) {
+                flags.forEach((flag) => {
+                    if (flag.isFalling) {
+                        flag.fallVelocity += 0.5; // gravity
+                        flag.y += flag.fallVelocity;
+                        flag.rotation += flag.rotationSpeed; // Update rotation
+
+                        // Check if enemy hit the player
+                        const playerCenterX = gameState.playerX + PLAYER_WIDTH / 2;
+                        const playerCenterY = gameState.playerY;
+
+                        const distance = Math.sqrt(
+                            Math.pow(playerCenterX - flag.x, 2) +
+                            Math.pow(playerCenterY - flag.y, 2)
+                        );
+
+                        if (distance < 50 && flag.fallVelocity > 0) {
+                            flag.isFalling = false;
+                            flag.hasHit = true;
+                            flag.y = gameState.playerY + 60; // Rest below player
+                            flag.hitTime = gameState.playerAnimFrame;
+                        }
+
+                        // Stop falling if hit ground
+                        if (flag.y >= canvas.height * 0.65) {
+                            flag.isFalling = false;
+                            flag.hasHit = true;
+                            flag.y = canvas.height * 0.65;
+                            flag.hitTime = gameState.playerAnimFrame;
+                        }
+                    }
+
+                    // Fade out after hitting
+                    if (flag.hitTime !== null) {
+                        const fadeFrames = 60; // Fade over 1 second (60 frames)
+                        const framesSinceHit = gameState.playerAnimFrame - flag.hitTime;
+                        flag.opacity = Math.max(0, 1 - (framesSinceHit / fadeFrames));
+                    }
+                });
+            }
+
+            // Check collision with flags (normal gameplay only)
+            if (!gameState.inExploration) {
+                flags.forEach((flag) => {
+                    if (!flag.answered && !flag.isFalling) {
+                        const distance = Math.sqrt(
+                            Math.pow(gameState.playerX + PLAYER_WIDTH / 2 - flag.x, 2) +
+                            Math.pow(gameState.playerY - flag.y, 2)
+                        );
+
+                        if (distance < 50 && !flag.triggered) {
+                            flag.triggered = true;
+                            currentQuestionIndex = flag.questionIndex;
+                            showQuestion();
+                        }
+                    }
+                });
+            }
+
+            // Calculate progress
+            gameState.levelProgress = (gameState.questionsAnswered / levels[gameState.currentLevel].questions.length) * 100;
+
+            resizeCanvas();
+            drawGame();
+        }
+
+        function showFactModal() {
+            const modal = document.getElementById('questionModal');
+            const title = document.getElementById('questionTitle');
+            const body = document.getElementById('questionBody');
+            const modalButtons = document.querySelector('.modal-buttons');
+
+            title.textContent = 'FACT DISCOVERED';
+
+            let html = `<div class="question-box">
+                <div class="question-text">${gameState.activeFact.fact}</div>
+                <div style="margin-top: 12px; font-size: 10px; color: #666666;">
+                    Press F to review this fact, or press any movement key to continue searching.
+                </div>
+            </div>`;
+
+            body.innerHTML = html;
+            modalButtons.style.display = 'none';
+
+            modal.classList.add('show');
+            factModalOpen = true;
+            // Kill all movement the instant the modal opens
+            Object.keys(keyPressed).forEach(k => keyPressed[k] = false);
+            gameState.playerVelX = 0;
+            gameState.playerVelY = 0;
+        }
+
+        function closeFactModal() {
+            document.getElementById('questionModal').classList.remove('show');
+            factModalOpen = false;
+        }
+
+        function showFactQuestion() {
+            // Build question directly from activeFact — same object shown on the paper.
+            const af = gameState.activeFact;
+            currentQuestion = shuffleQuestionOptions({ question: af.question, options: af.options, correct: af.correct });
+
+            const modal = document.getElementById('questionModal');
+            const title = document.getElementById('questionTitle');
+            const body = document.getElementById('questionBody');
+            const modalButtons = document.querySelector('.modal-buttons');
+
+            title.textContent = `Fact Question`;
+
+            let html = `<div class="question-box">
+                <div class="question-text">${af.question}</div>`;
+
+            af.options.forEach((option, index) => {
+                html += `<div class="answer-option">
+                    <input type="radio" name="answer" id="answer${index}" value="${index}">
+                    <label for="answer${index}">${option}</label>
+                </div>`;
+            });
+
+            html += `</div>`;
+            body.innerHTML = html;
+            modalButtons.style.display = 'flex'; // Show buttons for question modal
+
+            modal.classList.add('show');
+            questionModalOpen = true;
+
+            // Pause all movement
+            keyPressed['w'] = false;
+            keyPressed['a'] = false;
+            keyPressed['s'] = false;
+            keyPressed['d'] = false;
+            keyPressed['arrowup'] = false;
+            keyPressed['arrowdown'] = false;
+            keyPressed['arrowleft'] = false;
+            keyPressed['arrowright'] = false;
+
+            // Auto-focus submit button so Enter submits
+            setTimeout(() => {
+                document.getElementById('answer0').checked = true;
+                const submitBtn = document.querySelector('.modal-buttons .btn');
+                if (submitBtn) submitBtn.focus();
+            }, 100);
+        }
+
+        function showQuestion() {
+            const levelQuestions = levels[gameState.currentLevel].questions;
+
+            if (currentQuestionIndex >= levelQuestions.length) {
+                completeLevelModal();
+                return;
+            }
+
+            currentQuestion = shuffleQuestionOptions(levelQuestions[currentQuestionIndex]);
+            const modal = document.getElementById('questionModal');
+            const title = document.getElementById('questionTitle');
+            const body = document.getElementById('questionBody');
+
+            title.textContent = `Level ${gameState.currentLevel} - Question ${currentQuestionIndex + 1}/${levelQuestions.length}`;
+
+            let html = `<div class="question-box">
+                <div class="question-text">${currentQuestion.question}</div>`;
+
+            currentQuestion.options.forEach((option, index) => {
+                html += `<div class="answer-option">
+                    <input type="radio" name="answer" id="answer${index}" value="${index}">
+                    <label for="answer${index}">${option}</label>
+                </div>`;
+            });
+
+            html += `</div>`;
+            body.innerHTML = html;
+
+            modal.classList.add('show');
+            questionModalOpen = true;
+
+            // Pause all movement by clearing movement keys
+            keyPressed['w'] = false;
+            keyPressed['a'] = false;
+            keyPressed['s'] = false;
+            keyPressed['d'] = false;
+            keyPressed['arrowup'] = false;
+            keyPressed['arrowdown'] = false;
+            keyPressed['arrowleft'] = false;
+            keyPressed['arrowright'] = false;
+
+            // Auto-focus submit button so Enter submits
+            setTimeout(() => {
+                document.getElementById('answer0').checked = true;
+                const submitBtn = document.querySelector('.modal-buttons .btn');
+                if (submitBtn) submitBtn.focus();
+            }, 100);
+        }
+
+        function showFeedback(message, isCorrect) {
+            const notification = document.getElementById('feedbackNotification');
+            notification.textContent = message;
+            notification.className = 'feedback-notification show ' + (isCorrect ? 'correct' : 'incorrect');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.classList.remove('fade-out');
+                    notification.className = 'feedback-notification';
+                }, 300);
+            }, 2000);
+        }
+
+        function submitAnswer() {
+            const selected = document.querySelector('input[name="answer"]:checked');
+
+            if (!selected) {
+                showFeedback('Please select an answer', false);
+                return;
+            }
+
+            const answer = parseInt(selected.value);
+            const isFactQuestion = gameState.inExploration;
+            let isCorrect = answer === currentQuestion.correct;
+
+            if (!isFactQuestion) {
+                // Mark the flag as answered for regular questions
+                if (currentQuestionIndex < flags.length) {
+                    flags[currentQuestionIndex].answered = true;
+                }
+            }
+
+            if (isCorrect) {
+                gameState.score += 100;
+                gameState.questionsCorrect++;
+                showFeedback('✓ Correct!', true);
+            } else {
+                showFeedback('✗ Incorrect. Answer: ' + currentQuestion.options[currentQuestion.correct], false);
+
+                if (isFactQuestion) {
+                    // Fact question - lose a life then fade and respawn
+                    gameState.lives--;
+
+                    let fadeInterval = setInterval(() => {
+                        gameState.explorationOpacity = Math.max(0, gameState.explorationOpacity - 0.05);
+                        if (gameState.explorationOpacity <= 0) {
+                            clearInterval(fadeInterval);
+                            // Respawn in the direction the player is moving
+                            const angle = gameState.lastMovementAngle;
+                            gameState.factPaperX = gameState.playerX + Math.cos(angle) * 800;
+                            gameState.factPaperY = gameState.playerY + Math.sin(angle) * 800;
+                            gameState.factDudeX = gameState.playerX + Math.cos(angle) * 1500;
+                            gameState.factDudeY = gameState.playerY + Math.sin(angle) * 1500;
+                            gameState.factDudeFound = false;
+                            gameState.paperFound = false;
+                            gameState.explorationOpacity = 1;
+                            console.log("respawned after wrong answer");
+                        }
+                    }, 50);
+                } else {
+                    // Regular question - trigger falling damage
+                    gameState.lives--;
+
+                    // Trigger falling damage animation on the enemy
+                    if (currentQuestionIndex < flags.length) {
+                        const enemy = flags[currentQuestionIndex];
+                        enemy.isFalling = true;
+                        enemy.y = enemy.y - 40; // Start from current drawn position
+                        enemy.fallVelocity = 0;
+                        enemy.rotation = 0;
+                        enemy.rotationSpeed = (Math.random() - 0.5) * 0.3; // Random spin rate
+                    }
+                }
+
+                if (gameState.lives <= 0) {
+                    closeModal();
+                    setTimeout(() => {
+                        showFeedback('Game Over! Return to menu.', false);
+                        setTimeout(() => location.reload(), 2500);
+                    }, 500);
+                    return;
+                }
+            }
+
+            gameState.questionsAnswered++;
+
+            // Close modal immediately so user can watch the falling enemy
+            closeModal();
+            updateGame();
+
+            // If fact question was answered
+            if (isFactQuestion) {
+                if (isCorrect) {
+                    gameState.factsAnswered = (gameState.factsAnswered || 0) + 1;
+                    // After 3 facts, advance to next level
+                    if (gameState.factsAnswered >= 6) {
+                        setTimeout(() => {
+                            gameState.inExploration = false;
+                            nextLevel();
+                        }, 2500);
+                    } else {
+                        // Spawn next fact
+                        setTimeout(() => {
+                            spawnNextFact();
+                            updateGame();
+                        }, 2500);
+                    }
+                }
+            } else {
+                // Regular level questions - check if level is complete after feedback delay
+                setTimeout(() => {
+                    if (gameState.questionsAnswered >= levels[gameState.currentLevel].questions.length) {
+                        completeLevelModal();
+                    }
+                }, 2500);
+            }
+        }
+
+
+        function closeModal() {
+            document.getElementById('questionModal').classList.remove('show');
+            questionModalOpen = false;
+        }
+
+        function completeLevelModal() {
+            const modal = document.getElementById('levelCompleteModal');
+            const reward = document.getElementById('levelReward');
+            const accuracy = (gameState.questionsCorrect / gameState.questionsAnswered * 100).toFixed(0);
+            reward.textContent = `Accuracy: ${accuracy}% | Score +${gameState.questionsAnswered * 100}`;
+            modal.classList.add('show');
+            setTimeout(() => {
+                const nextBtn = modal.querySelector('.btn');
+                if (nextBtn) nextBtn.focus();
+            }, 100);
+        }
+
+        function startExplorationPhase() {
+            gameState.inExploration = true;
+            gameState.playerX = 0;
+            gameState.playerY = 0;
+            gameState.cameraX = 0;
+            gameState.cameraY = 0;
+            gameState.lastMovementAngle = 0; // Default direction
+
+            // Shuffle the deck fresh at level start
+            gameState.factDeck = shuffleArray(bigBangFacts);
+            gameState.factsAnswered = 0;
+
+            // Draw the first fact from the deck
+            gameState.currentFact = gameState.factDeck.pop();
+            gameState.activeFact = gameState.currentFact;
+
+            // Place paper in the direction player will move (800 units away)
+            let angle = gameState.lastMovementAngle;
+            if (gameState.lastMovementAngle === 0) {
+                angle = Math.random() * Math.PI * 2;
+            }
+
+            gameState.factPaperX = Math.cos(angle) * 800;
+            gameState.factPaperY = Math.sin(angle) * 800;
+
+            // Place fact dude further away (1500 units from spawn)
+            gameState.factDudeX = Math.cos(angle) * 1500;
+            gameState.factDudeY = Math.sin(angle) * 1500;
+
+            gameState.paperFound = false;
+            gameState.factDudeFound = false;
+            gameState.explorationOpacity = 1;
+
+            console.log("spawned - deck has", gameState.factDeck.length, "remaining");
+        }
+
+        function spawnNextFact() {
+            // If deck is empty, reshuffle
+            if (!gameState.factDeck || gameState.factDeck.length === 0) {
+                gameState.factDeck = shuffleArray(bigBangFacts);
+                console.log("deck reshuffled");
+            }
+
+            // Draw next fact from deck
+            gameState.currentFact = gameState.factDeck.pop();
+            gameState.activeFact = gameState.currentFact;
+
+            // Place paper in the direction player is moving
+            const angle = gameState.lastMovementAngle;
+            gameState.factPaperX = gameState.playerX + Math.cos(angle) * 800;
+            gameState.factPaperY = gameState.playerY + Math.sin(angle) * 800;
+
+            // Place fact dude further away
+            gameState.factDudeX = gameState.playerX + Math.cos(angle) * 1500;
+            gameState.factDudeY = gameState.playerY + Math.sin(angle) * 1500;
+
+            gameState.paperFound = false;
+            gameState.factDudeFound = false;
+            gameState.explorationOpacity = 1;
+
+            console.log("spawned - fact:", gameState.activeFact.fact);
+        }
+
+        function closeLevelModal() {
+            document.getElementById('levelCompleteModal').classList.remove('show');
+        }
+
+        function startCelebration() {
+            closeLevelModal();
+            gameState.inCelebration = true;
+            gameState.celebrationPhase = 0;
+            gameState.celebrationFrame = 0;
+            gameState.celebrationName = '';
+
+            const dudeColors = ['#ff00ff', '#00ffff', '#ffff00', '#ff6b6b'];
+            gameState.celebrationDudes = [
+                { xFrac: 0.15, yFrac: 0.62, phase: 0,   color: dudeColors[0], scale: 1 },
+                { xFrac: 0.40, yFrac: 0.68, phase: 1.1, color: dudeColors[1], scale: 1 },
+                { xFrac: 0.65, yFrac: 0.60, phase: 2.2, color: dudeColors[2], scale: 1 },
+                { xFrac: 0.85, yFrac: 0.65, phase: 0.6, color: dudeColors[3], scale: 1 },
+            ];
+            gameState.celebrationDogs = [
+                { xFrac: 0.28, yFrac: 0.58, phase: 0.3 }
+            ];
+            gameState.celebrationKitties = [
+                { xFrac: 0.72, yFrac: 0.57, phase: 1.7 }
+            ];
+
+            document.getElementById('celebrationOverlay').style.display = 'flex';
+            setTimeout(() => document.getElementById('celebrationName').focus(), 50);
+        }
+
+        function submitCelebrationName() {
+            const input = document.getElementById('celebrationName');
+            const name = input.value.trim();
+            if (!name) { input.focus(); return; }
+            gameState.celebrationName = name;
+            gameState.celebrationPhase = 1;
+            document.getElementById('celebrationForm').style.display = 'none';
+
+            // Expand to 10 dogs spread across the screen
+            const dogPositions = [
+                [0.08,0.55],[0.18,0.70],[0.30,0.50],[0.42,0.65],[0.52,0.55],
+                [0.60,0.72],[0.68,0.48],[0.76,0.62],[0.86,0.55],[0.94,0.68]
+            ];
+            gameState.celebrationDogs = dogPositions.map(([xFrac, yFrac], i) => ({
+                xFrac, yFrac, phase: i * 0.63
+            }));
+
+            const kittyPositions = [
+                [0.12,0.62],[0.34,0.56],[0.55,0.68],[0.74,0.52],[0.91,0.60]
+            ];
+            gameState.celebrationKitties = kittyPositions.map(([xFrac, yFrac], i) => ({
+                xFrac, yFrac, phase: i * 0.9 + 0.4
+            }));
+        }
+
+        function drawCelebration() {
+            const W = canvas.width;
+            const H = canvas.height;
+            const f = gameState.celebrationFrame++;
+            const phase = gameState.celebrationPhase;
+
+            // Background — deep space gradient
+            const bg = ctx.createLinearGradient(0, 0, 0, H);
+            bg.addColorStop(0, '#000011');
+            bg.addColorStop(1, '#0a0030');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            drawStarfield();
+
+            // Disco ground strip
+            const groundY = H * 0.78;
+            for (let gx = 0; gx < W; gx += 30) {
+                const hue = (gx / W * 360 + f * 2) % 360;
+                ctx.fillStyle = `hsl(${hue},80%,35%)`;
+                ctx.fillRect(gx, groundY, 30, H - groundY);
+            }
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+            // Floating stars / sparkles
+            for (let i = 0; i < 18; i++) {
+                const sx = ((i * 137 + f * (i % 3 === 0 ? 0.8 : 1.3)) % W + W) % W;
+                const sy = ((i * 79 + f * 0.5) % (groundY * 0.9));
+                const r = 2 + Math.sin(f * 0.07 + i) * 1.5;
+                const hue = (f * 3 + i * 20) % 360;
+                ctx.fillStyle = `hsl(${hue},100%,75%)`;
+                ctx.beginPath();
+                ctx.arc(sx, sy, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw space dogs
+            gameState.celebrationDogs.forEach(d => {
+                const x = d.xFrac * W;
+                const bob = Math.sin(f * 0.09 + d.phase) * 14;
+                const lean = Math.sin(f * 0.09 + d.phase) * 0.15;
+                ctx.save();
+                ctx.translate(x, d.yFrac * H + bob);
+                ctx.rotate(lean);
+                ctx.translate(-x, -(d.yFrac * H + bob));
+                drawSpaceDog(x, d.yFrac * H + bob, 1);
+                ctx.restore();
+            });
+
+            // Draw space kitties
+            gameState.celebrationKitties.forEach(d => {
+                const x = d.xFrac * W;
+                const bob = Math.sin(f * 0.11 + d.phase) * 16;
+                const lean = Math.sin(f * 0.11 + d.phase) * 0.18;
+                ctx.save();
+                ctx.translate(x, d.yFrac * H + bob);
+                ctx.rotate(lean);
+                ctx.translate(-x, -(d.yFrac * H + bob));
+                drawSpaceKitty(x, d.yFrac * H + bob, 1);
+                ctx.restore();
+            });
+
+            // Draw goofy dudes (with scale for phase 1)
+            gameState.celebrationDudes.forEach((d, i) => {
+                if (phase === 1) d.scale = Math.min(4, d.scale + 0.004);
+                const x = d.xFrac * W;
+                const bob = Math.sin(f * 0.1 + d.phase) * 18;
+                const y = d.yFrac * H + bob;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.scale(d.scale, d.scale);
+                ctx.translate(-x, -y);
+                // draw body parts manually using the dude palette
+                const bodyColor = d.color;
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(x - 12, y - 30, 24, 35);
+                ctx.beginPath(); ctx.arc(x, y - 35, 10, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(x - 4, y - 37, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x + 5, y - 36, 3.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#000000';
+                ctx.beginPath(); ctx.arc(x - 3, y - 38, 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x + 6, y - 35, 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(x-3,y-32); ctx.quadraticCurveTo(x,y-29,x+3,y-32); ctx.stroke();
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(x-12,y-15); ctx.lineTo(x-25,y-10); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x+12,y-15); ctx.lineTo(x+28,y-5); ctx.stroke();
+                ctx.fillStyle = bodyColor;
+                for (let s = 0; s < 5; s++) {
+                    const ang = (s / 5) * Math.PI;
+                    ctx.beginPath();
+                    ctx.moveTo(x + Math.cos(ang)*10, y - 45 + Math.sin(ang)*5);
+                    ctx.lineTo(x + Math.cos(ang)*16, y - 52 + Math.sin(ang)*5);
+                    ctx.lineTo(x + Math.cos(ang+0.3)*12, y - 49 + Math.sin(ang)*5);
+                    ctx.closePath(); ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            // ── CONGRATS TEXT (phase 1 only) ──────────────────────────
+            if (phase === 1) {
+                const cx = W / 2;
+                const ty = H * 0.30;
+
+                // Glow halo
+                const glow = ctx.createRadialGradient(cx, ty, 10, cx, ty, 200);
+                glow.addColorStop(0, 'rgba(100,80,255,0.35)');
+                glow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = glow;
+                ctx.fillRect(cx - 220, ty - 80, 440, 160);
+
+                // Shadow
+                ctx.shadowColor = '#7700ff';
+                ctx.shadowBlur = 28;
+
+                // "Congrats." line
+                const hue1 = (f * 1.5) % 360;
+                const grad1 = ctx.createLinearGradient(cx - 180, 0, cx + 180, 0);
+                grad1.addColorStop(0, `hsl(${hue1},100%,70%)`);
+                grad1.addColorStop(0.5, `hsl(${(hue1+120)%360},100%,85%)`);
+                grad1.addColorStop(1, `hsl(${(hue1+240)%360},100%,70%)`);
+                ctx.fillStyle = grad1;
+                ctx.font = `bold ${Math.round(W * 0.065)}px Georgia, serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('Congrats,', cx, ty - 10);
+
+                // Name line
+                const grad2 = ctx.createLinearGradient(cx - 150, 0, cx + 150, 0);
+                grad2.addColorStop(0, `hsl(${(hue1+60)%360},100%,75%)`);
+                grad2.addColorStop(1, `hsl(${(hue1+180)%360},100%,75%)`);
+                ctx.fillStyle = grad2;
+                ctx.font = `bold ${Math.round(W * 0.048)}px Georgia, serif`;
+                ctx.fillText(gameState.celebrationName + '!', cx, ty + Math.round(W * 0.065) - 2);
+
+                // Subtitle
+                ctx.shadowBlur = 14;
+                ctx.shadowColor = '#00ccff';
+                ctx.fillStyle = '#e0f8ff';
+                ctx.font = `italic ${Math.round(W * 0.030)}px Georgia, serif`;
+                ctx.fillText('You know the Big Bang!', cx, ty + Math.round(W * 0.065) + Math.round(W * 0.042));
+
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function nextLevel() {
+            closeLevelModal();
+            gameState.inExploration = false;
+            gameState.inGalaxyMode = false;
+            gameState.inRedshiftMode = false;
+
+            if (gameState.currentLevel < 4) {
+                gameState.currentLevel++;
+                currentQuestionIndex = 0;
+                gameState.questionsAnswered = 0;
+                gameState.questionsCorrect = 0;
+                gameState.levelProgress = 0;
+
+                updateDisplay();
+                updateSidebar();
+
+                if (gameState.currentLevel === 2) {
+                    startExplorationPhase();
+                } else if (gameState.currentLevel === 3) {
+                    startRedshiftPhase();
+                } else if (gameState.currentLevel === 4) {
+                    startGalaxyPhase();
+                } else {
+                    setupLevel();
+                    updateGame();
+                }
+            } else {
+                startCelebration();
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('levelDisplay').textContent = gameState.currentLevel;
+            document.getElementById('scoreDisplay').textContent = gameState.score;
+            document.getElementById('livesDisplay').textContent = gameState.lives;
+            document.getElementById('progressDisplay').textContent = Math.round(gameState.levelProgress) + '%';
+        }
+
+        function setupLevel() {
+            // Create flags for each question in the level, spread across the extended world
+            flags = [];
+            currentFlagIndex = 0;
+            const numQuestions = levels[gameState.currentLevel].questions.length;
+            const spacing = LEVEL_WIDTH / (numQuestions + 1);
+
+            for (let i = 0; i < numQuestions; i++) {
+                flags.push({
+                    x: spacing * (i + 1),
+                    y: canvas.height * 0.65,
+                    questionIndex: i,
+                    triggered: false,
+                    answered: false,
+                    isFalling: false,
+                    hasHit: false,
+                    fallStartY: 0,
+                    fallVelocity: 0,
+                    rotation: 0,
+                    rotationSpeed: 0,
+                    hitTime: null,
+                    opacity: 1
+                });
+            }
+
+            gameState.playerX = 100;
+            gameState.playerY = canvas.height * 0.65;
+            gameState.cameraX = 0;
+            gameState.playerAnimFrame = 0;
+        }
+
+        // Keyboard handlers
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // Battle mode controls
+            if (gameState.inBattle) {
+                if (key === ' ') {
+                    e.preventDefault();
+                    playerBattleAttack();
+                } else if (key === 't') {
+                    e.preventDefault();
+                    resolveDogAttack(true);
+                } else if (key === 'f' && gameState.inBattle) {
+                    e.preventDefault();
+                    resolveDogAttack(false);
+                }
+                return;
+            }
+
+            // Debug: Press C to complete current level
+            if (key === 'c') {
+                e.preventDefault();
+                if (gameState.inExploration || gameState.inGalaxyMode || gameState.inRedshiftMode) {
+                    gameState.inExploration = false;
+                    gameState.inGalaxyMode = false;
+                    gameState.inRedshiftMode = false;
+                    nextLevel();
+                } else {
+                    gameState.questionsAnswered = levels[gameState.currentLevel].questions.length;
+                    gameState.questionsCorrect = levels[gameState.currentLevel].questions.length;
+                    completeLevelModal();
+                }
+                return;
+            }
+
+            // Handle question modal controls
+            if (questionModalOpen) {
+                if (key === 'arrowup' || key === 'w') {
+                    e.preventDefault();
+                    selectPreviousOption();
+                } else if (key === 'arrowdown' || key === 's') {
+                    e.preventDefault();
+                    selectNextOption();
+                } else if (key === 'arrowleft' || key === 'arrowright') {
+                    e.preventDefault();
+                } else if (key === 'enter') {
+                    e.preventDefault();
+                    submitAnswer();
+                }
+                return;
+            }
+
+            // Handle F key for FAX (fact display) in exploration
+            if (key === 'f' && gameState.inExploration && gameState.paperFound) {
+                e.preventDefault();
+                if (!factModalOpen) {
+                    showFactModal();
+                } else {
+                    closeFactModal();
+                }
+                return;
+            }
+
+            // Close fact modal with Enter only
+            if (key === 'enter' && factModalOpen) {
+                closeFactModal();
+                e.preventDefault();
+                return;
+            }
+
+            // Handle movement controls
+            if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+                if (factModalOpen) {
+                    e.preventDefault();
+                    return;
+                }
+                keyPressed[key] = true;
+                if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)) {
+                    ensureMusicPlaying();
+                }
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+                keyPressed[key] = false;
+            }
+        });
+
+        function selectNextOption() {
+            const options = document.querySelectorAll('input[name="answer"]');
+            let currentIndex = -1;
+
+            options.forEach((option, index) => {
+                if (option.checked) currentIndex = index;
+            });
+
+            const nextIndex = (currentIndex + 1) % options.length;
+            options[nextIndex].checked = true;
+            options[nextIndex].focus();
+        }
+
+        function selectPreviousOption() {
+            const options = document.querySelectorAll('input[name="answer"]');
+            let currentIndex = 0;
+
+            options.forEach((option, index) => {
+                if (option.checked) currentIndex = index;
+            });
+
+            const prevIndex = currentIndex === 0 ? options.length - 1 : currentIndex - 1;
+            options[prevIndex].checked = true;
+            options[prevIndex].focus();
+        }
+
+        // Update sidebar to show locked/unlocked levels
+        function updateSidebar() {
+            document.querySelectorAll('.level-item').forEach(item => {
+                const level = parseInt(item.dataset.level);
+                item.classList.remove('active', 'locked');
+
+                if (level === gameState.currentLevel) {
+                    item.classList.add('active');
+                } else if (level > gameState.currentLevel) {
+                    item.classList.add('locked');
+                }
+            });
+        }
+
+        // Sidebar level selection - disabled for linear progression
+        document.querySelectorAll('.level-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Linear progression - no manual level selection
+            });
+        });
+
+        // Initial setup
+        resizeCanvas();
+        updateSidebar();
+        setupLevel();
+        updateGame();
+
+        // Game loop
+        setInterval(() => {
+            updateGame();
+        }, 1000 / 60); // 60 FPS
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            updateGame();
+        });
+    </script>
+</body>
+</html>
