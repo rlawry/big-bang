@@ -2936,7 +2936,7 @@
             let html = `<div class="question-box">
                 <div class="question-text">${af.question}</div>`;
 
-            af.options.forEach((option, index) => {
+            currentQuestion.options.forEach((option, index) => {
                 html += `<div class="answer-option">
                     <input type="radio" name="answer" id="answer${index}" value="${index}">
                     <label for="answer${index}">${option}</label>
