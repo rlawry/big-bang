@@ -488,6 +488,28 @@
                                 ✓
                             </button>
                         </div>
+                        <div id="celebrationRestart" style="
+                            display:none; pointer-events:auto; text-align:center;
+                            position:absolute; bottom:18px; right:24px;
+                            background:rgba(0,0,20,0.80);
+                            border:2px solid #88ccff; border-radius:8px;
+                            padding:8px 18px; font-family:'MS Sans Serif',Arial;">
+                            <span style="color:#ffff88;font-size:12px;letter-spacing:1px;">
+                                Start over?
+                            </span>
+                            <button onclick="location.reload()"
+                                style="margin-left:10px;padding:3px 10px;font-size:12px;
+                                       background:#004400;color:#aaffaa;border:2px solid #88ccff;
+                                       border-radius:4px;cursor:pointer;font-family:'MS Sans Serif',Arial;">
+                                Y
+                            </button>
+                            <button onclick="document.getElementById('celebrationRestart').style.display='none'"
+                                style="margin-left:4px;padding:3px 10px;font-size:12px;
+                                       background:#440000;color:#ffaaaa;border:2px solid #88ccff;
+                                       border-radius:4px;cursor:pointer;font-family:'MS Sans Serif',Arial;">
+                                N
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -2584,6 +2606,13 @@
             // Update animation frame always
             gameState.playerAnimFrame++;
 
+            // Celebration mode - only animate, no game logic
+            if (gameState.inCelebration) {
+                resizeCanvas();
+                drawGame();
+                return;
+            }
+
             // Battle mode - only draw, no movement
             if (gameState.inBattle) {
                 resizeCanvas();
@@ -3225,6 +3254,7 @@
             gameState.celebrationName = name;
             gameState.celebrationPhase = 1;
             document.getElementById('celebrationForm').style.display = 'none';
+            document.getElementById('celebrationRestart').style.display = 'block';
 
             // Expand to 10 dogs spread across the screen
             const dogPositions = [
@@ -3464,6 +3494,15 @@
         // Keyboard handlers
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
+
+            // Celebration mode — only Y/N are active; everything else is blocked
+            if (gameState.inCelebration) {
+                if (gameState.celebrationPhase === 1) {
+                    if (key === 'y') { location.reload(); }
+                    if (key === 'n') { document.getElementById('celebrationRestart').style.display = 'none'; }
+                }
+                return;
+            }
 
             // Battle mode controls
             if (gameState.inBattle) {
