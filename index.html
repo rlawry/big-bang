@@ -632,11 +632,30 @@
         bgMusic.loop = true;
         bgMusic.volume = 0.5;
         let bgMusicStarted = false;
+        let audioCtx = null;
+        let analyser = null;
+        let freqData = null;
+
+        function setupAudioAnalyser() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaElementSource(bgMusic);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.8;
+                freqData = new Uint8Array(analyser.frequencyBinCount);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) {}
+        }
 
         function ensureMusicPlaying() {
             if (!bgMusicStarted) {
                 bgMusicStarted = true;
                 bgMusic.play().catch(() => {});
+                setupAudioAnalyser();
             }
         }
 
@@ -1843,6 +1862,9 @@
             gameState.battleProjectile = null;
             gameState.battleWaiting = false;
             gameState.currentBattleFact = null;
+            gameState.battleExplosion = null;
+            gameState.enemyAttackProjectile = null;
+            gameState.playerSpinAngle = 0;
             gameState.battleDogFactDeck = shuffleArray(dogBattleFacts);
             gameState.battleKittyFactDeck = shuffleArray(kittyBattleFacts);
 
@@ -1857,6 +1879,9 @@
             gameState.battleProjectile = null;
             gameState.currentBattleFact = null;
             gameState.battleWaiting = false;
+            gameState.battleExplosion = null;
+            gameState.enemyAttackProjectile = null;
+            gameState.playerSpinAngle = 0;
         }
 
         function drawBattleMode() {
@@ -1891,9 +1916,15 @@
                 drawSpaceDog(W / 4, midY, 1);
             }
 
-            // Draw player (right quarter)
+            // Draw player (right quarter) — spins when hit by enemy fact
             const px = W * 3 / 4;
             const py = midY - 15;
+            ctx.save();
+            if (gameState.playerSpinAngle) {
+                ctx.translate(px, py + 15);
+                ctx.rotate(gameState.playerSpinAngle);
+                ctx.translate(-px, -(py + 15));
+            }
             ctx.fillStyle = '#ff0000';
             ctx.fillRect(px - 10, py, 20, 30);
             ctx.fillStyle = '#ffffff';
@@ -1906,6 +1937,7 @@
             ctx.fillStyle = '#0066cc';
             ctx.fillRect(px - 5, py + 28, 3, 4);
             ctx.fillRect(px + 2, py + 28, 3, 4);
+            ctx.restore();
 
             // Projectile animation - text scrolls from right side through the dog
             if (gameState.battleProjectile) {
@@ -1923,6 +1955,7 @@
                 // Deal damage when the leading edge of the text reaches the dog
                 if (!p.damageDone && p.x <= W / 4) {
                     p.damageDone = true;
+                    gameState.battleExplosion = { x: W / 4, y: midY - 25, frame: 0, maxFrames: 40 };
                     gameState.dogHealth = Math.max(0, gameState.dogHealth - 1);
                     if (gameState.dogHealth <= 0) {
                         gameState.battleProjectile = null;
@@ -1955,6 +1988,42 @@
                 // Remove projectile once the full text has scrolled off the left edge
                 if (p.x + p.textWidth <= 0) {
                     gameState.battleProjectile = null;
+                }
+            }
+
+            // Explosion poof at enemy position
+            if (gameState.battleExplosion) {
+                const ex = gameState.battleExplosion;
+                drawExplosionPoof(ex.x, ex.y, ex.frame, ex.maxFrames);
+                ex.frame++;
+                if (ex.frame >= ex.maxFrames) gameState.battleExplosion = null;
+            }
+
+            // Enemy attack projectile — fact text flies from enemy and slams into player
+            if (gameState.enemyAttackProjectile) {
+                const ep = gameState.enemyAttackProjectile;
+                if (!ep.landed) {
+                    ep.x += ep.velX;
+                    const displayText = ep.text.length > 55 ? ep.text.substring(0, 55) + '…' : ep.text;
+                    ctx.save();
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.shadowColor = '#ff8800';
+                    ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#ff4400';
+                    ctx.fillText(displayText, ep.x, ep.y);
+                    ctx.restore();
+                    if (ep.x >= W * 0.68) {
+                        ep.landed = true;
+                        ep.spinFrames = 45;
+                    }
+                } else {
+                    ep.spinFrames--;
+                    gameState.playerSpinAngle = ((45 - ep.spinFrames) / 45) * Math.PI * 2;
+                    if (ep.spinFrames <= 0) {
+                        gameState.enemyAttackProjectile = null;
+                        gameState.playerSpinAngle = 0;
+                    }
                 }
             }
 
@@ -2009,6 +2078,38 @@
             ctx.fillText(`${label}: ${current}/${max}`, x, y - 2);
         }
 
+        function drawExplosionPoof(x, y, frame, maxFrames) {
+            const t = frame / maxFrames;
+            ctx.save();
+            ctx.globalAlpha = 1 - t;
+            // Expanding rings
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 4 * (1 - t);
+            ctx.beginPath(); ctx.arc(x, y, t * 58, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2 * (1 - t);
+            ctx.beginPath(); ctx.arc(x, y, t * 36, 0, Math.PI * 2); ctx.stroke();
+            // Radiating sparks
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const dist = t * 52;
+                ctx.fillStyle = i % 2 === 0 ? '#ffdd00' : '#ff6600';
+                ctx.beginPath();
+                ctx.arc(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, (1 - t) * 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // POW text fades out in first half
+            if (t < 0.45) {
+                ctx.globalAlpha = (0.45 - t) / 0.45;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${Math.round(16 + t * 10)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('POW!', x, y - 8);
+                ctx.textAlign = 'left';
+            }
+            ctx.restore();
+        }
+
         function playerBattleAttack() {
             if (!gameState.inBattle || gameState.battleTurn !== 'player' || gameState.battleAnimating) return;
             gameState.battleAnimating = true;
@@ -2050,6 +2151,15 @@
                     }, 1500);
                     return;
                 }
+                // Animate enemy's fact text slamming into the player
+                gameState.enemyAttackProjectile = {
+                    x: canvas.width / 4,
+                    y: canvas.height / 2,
+                    velX: (canvas.width / 2) / 25,
+                    text: gameState.currentBattleFact.statement,
+                    landed: false,
+                    spinFrames: 0
+                };
             } else {
                 showFeedback('Correct!', true);
             }
@@ -2692,7 +2802,7 @@
                 }
 
                 // Move dog toward player and check encounter
-                if (gameState.dogSpawned && !gameState.inBattle && !factModalOpen) {
+                if (gameState.dogSpawned && !gameState.inBattle && !factModalOpen && !questionModalOpen) {
                     const dogDx = gameState.playerX - gameState.dogX;
                     const dogDy = gameState.playerY - gameState.dogY;
                     const dogDist = Math.sqrt(dogDx * dogDx + dogDy * dogDy);
@@ -2747,7 +2857,7 @@
                 }
 
                 // Move kitty toward player and check encounter
-                if (gameState.kittySpawned && !gameState.inBattle) {
+                if (gameState.kittySpawned && !gameState.inBattle && !questionModalOpen) {
                     const kDx = gameState.playerX - gameState.kittyX;
                     const kDy = gameState.playerY - gameState.kittyY;
                     const kDist = Math.sqrt(kDx * kDx + kDy * kDy);
@@ -3224,6 +3334,7 @@
 
         function startCelebration() {
             closeLevelModal();
+            setupAudioAnalyser();
             gameState.inCelebration = true;
             gameState.celebrationPhase = 0;
             gameState.celebrationFrame = 0;
@@ -3288,14 +3399,31 @@
 
             drawStarfield();
 
-            // Disco ground strip
+            // Equalizer visualizer ground
             const groundY = H * 0.78;
-            for (let gx = 0; gx < W; gx += 30) {
-                const hue = (gx / W * 360 + f * 2) % 360;
-                ctx.fillStyle = `hsl(${hue},80%,35%)`;
-                ctx.fillRect(gx, groundY, 30, H - groundY);
+            if (analyser && freqData) {
+                analyser.getByteFrequencyData(freqData);
+                const binCount = analyser.frequencyBinCount;
+                const binW = W / binCount;
+                for (let i = 0; i < binCount; i++) {
+                    const amp = freqData[i] / 255;
+                    const hue = (i / binCount) * 280 + 20; // red-orange → violet
+                    const sat = 65 + amp * 35;
+                    const lit = 15 + amp * 50;
+                    const barH = Math.max(H - groundY, amp * H * 0.38);
+                    ctx.fillStyle = `hsl(${hue},${sat}%,${lit}%)`;
+                    ctx.fillRect(i * binW, H - barH, binW + 0.5, barH);
+                }
+            } else {
+                // Fallback animation before audio context is ready
+                for (let gx = 0; gx < W; gx += 30) {
+                    const hue = (gx / W * 360 + f * 2) % 360;
+                    ctx.fillStyle = `hsl(${hue},80%,35%)`;
+                    ctx.fillRect(gx, groundY, 30, H - groundY);
+                }
             }
-            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            // Stage floor line
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
 
